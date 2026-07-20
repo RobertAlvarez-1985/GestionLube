@@ -1,0 +1,15 @@
+{
+  "name": "gestion-lube",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Migración e integración con Supabase para el panel semáforo de análisis de aceite usado.",
+  "scripts": {
+    "migrar": "node scripts/migrar-historico.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "dotenv": "^16.4.5",
+    "xlsx": "^0.18.5"
+  }
+}
