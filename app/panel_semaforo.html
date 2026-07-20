@@ -250,7 +250,10 @@
   .lamp-mini i.on1{background:#2bb87a;box-shadow:0 0 5px #2bb87a;} .lamp-mini i.on2{background:#e2a323;box-shadow:0 0 5px #e2a323;} .lamp-mini i.on3{background:#d13f3f;box-shadow:0 0 5px #d13f3f;}
   .main{margin-left:var(--side-w);}
   .view{display:none;} .view.active{display:block;}
-  .sidebar-toggle{display:none;}
+  .sidebar-toggle{display:none;position:fixed;top:14px;left:14px;z-index:90;width:38px;height:38px;
+    border-radius:8px;border:1px solid var(--border);background:var(--bg-panel);color:var(--ink);
+    font-size:18px;line-height:1;cursor:pointer;box-shadow:var(--shadow-sm);align-items:center;justify-content:center;}
+  .sidebar-toggle:hover{border-color:var(--accent);color:var(--accent-dark);}
 
   /* ================= DASHBOARD ================= */
   .dash-wrap{padding:24px 28px 48px;}
@@ -535,6 +538,8 @@
 </style>
 </head>
 <body>
+
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menú de módulos">☰</button>
 
 <aside class="sidebar" id="sidebar">
   <div class="side-head">
@@ -2191,6 +2196,9 @@
       document.getElementById('sidebar').classList.remove('open');
       window.scrollTo(0,0);
     });
+  });
+  document.getElementById('sidebarToggle').addEventListener('click', ()=>{
+    document.getElementById('sidebar').classList.toggle('open');
   });
 })();
 
