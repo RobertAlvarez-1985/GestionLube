@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg:#faf8f4; --bg-alt:#f1ede3; --bg-panel:#ffffff;
@@ -160,6 +161,23 @@
   .drawer-close{border:none;background:var(--bg-alt);width:30px;height:30px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);flex-shrink:0;}
   .drawer-close:hover{background:var(--border);color:var(--ink);}
   .drawer-body{flex:1;overflow-y:auto;padding:16px 20px 30px;}
+
+  /* conexión a la nube */
+  .cloud-field{margin-bottom:14px;}
+  .cloud-field label{display:block;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ink-soft);margin-bottom:5px;}
+  .cloud-field input{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-alt);color:var(--ink);}
+  .cloud-field input:focus{outline:none;border-color:var(--accent);background:#fff;}
+  .cloud-field .hint{font-size:11.5px;color:var(--ink-faint);margin-top:5px;}
+  .cloud-msg{font-size:12.5px;padding:9px 11px;border-radius:8px;margin-bottom:14px;display:none;}
+  .cloud-msg.show{display:block;}
+  .cloud-msg.err{background:var(--danger-bg);color:var(--danger-text);}
+  .cloud-msg.ok{background:var(--lamp-green-soft);color:#175c3d;}
+  .cloud-session{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg-alt);border:1px solid var(--border);border-radius:8px;padding:11px 13px;margin-bottom:16px;}
+  .cloud-session .who{font-size:13px;font-weight:600;}
+  .cloud-session .who small{display:block;font-weight:400;color:var(--ink-soft);font-size:11px;margin-top:2px;}
+  .cloud-pill{display:inline-flex;align-items:center;gap:6px;cursor:pointer;border:none;}
+  .cloud-pill.linked{background:var(--lamp-green-soft);border:1px solid var(--lamp-green-border);color:#175c3d;}
+  .cloud-pill.unlinked{background:var(--bg-alt);border:1px solid var(--border);color:var(--ink-soft);}
 
   /* gestor de columnas */
   .colmgr-search{margin-bottom:12px;}
@@ -644,6 +662,7 @@
         </div>
       </div>
       <div class="file-controls">
+        <button class="btn cloud-pill unlinked" id="cloudStatusPill">☁️ Nube: sin configurar</button>
         <span id="dashCount" class="count-pill" style="display:none;"></span>
         <button class="btn" id="btnDashReload" style="display:none;">Recargar carpeta</button>
         <button class="btn btn-primary" id="btnPickDir">Seleccionar carpeta</button>
@@ -670,6 +689,7 @@
         <div class="file-list-actions">
           <button class="btn btn-ghost" id="dashFilesAll">Marcar todos</button>
           <button class="btn btn-ghost" id="dashFilesNone">Desmarcar todos</button>
+          <button class="btn btn-primary" id="btnCloudUpload" style="display:none;">Subir a la nube</button>
         </div>
         <div class="file-list" id="dashFiles"></div>
       </div>
@@ -1202,6 +1222,53 @@
     <button class="drawer-close" id="closeDetailDrawer">✕</button>
   </div>
   <div class="drawer-body" id="detailBody"></div>
+</div>
+
+<!-- Conexión a la nube (Supabase) -->
+<div class="overlay" id="cloudOverlay"></div>
+<div class="drawer" id="cloudDrawer">
+  <div class="drawer-head">
+    <div>
+      <h3>Conexión a la nube</h3>
+      <div class="sub">Las muestras cargadas quedan disponibles en cualquier dispositivo</div>
+    </div>
+    <button class="drawer-close" id="closeCloudDrawer">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div id="cloudMsg" class="cloud-msg"></div>
+
+    <div id="cloudSessionBox" class="cloud-session" style="display:none;">
+      <div class="who"><span id="cloudSessionEmail"></span><small>Sesión activa</small></div>
+      <button class="btn btn-ghost" id="btnCloudSignOut">Cerrar sesión</button>
+    </div>
+
+    <div id="cloudConfigBox">
+      <div class="cloud-field">
+        <label for="cloudUrl">URL del proyecto Supabase</label>
+        <input type="text" id="cloudUrl" placeholder="https://xxxxxxxx.supabase.co">
+      </div>
+      <div class="cloud-field">
+        <label for="cloudAnonKey">Clave anon (pública)</label>
+        <input type="text" id="cloudAnonKey" placeholder="Project Settings → API → anon public">
+        <div class="hint">Se guarda solo en este navegador (localStorage). No es secreta, pero solo funciona junto con el login.</div>
+      </div>
+      <button class="btn btn-primary" id="btnCloudSaveConfig" style="width:100%;justify-content:center;">Guardar conexión</button>
+    </div>
+
+    <div id="cloudLoginBox" style="display:none;margin-top:18px;">
+      <div class="cloud-field">
+        <label for="cloudEmail">Correo</label>
+        <input type="email" id="cloudEmail" placeholder="usuario@laboratorio.com" autocomplete="username">
+      </div>
+      <div class="cloud-field">
+        <label for="cloudPassword">Contraseña</label>
+        <input type="password" id="cloudPassword" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary" id="btnCloudSignIn" style="width:100%;justify-content:center;">Iniciar sesión</button>
+      <div class="hint" style="margin-top:8px;">El usuario se crea desde Supabase → Authentication → Add user.</div>
+      <button class="btn btn-ghost" id="btnCloudEditConfig" style="width:100%;justify-content:center;margin-top:10px;">Cambiar conexión</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -5307,6 +5374,267 @@
     kpiRenderAll();
   });
   $('btnKpiPrint').addEventListener('click', exportKpiExcel);
+
+  /* ============================================================
+     CONEXIÓN A LA NUBE (Supabase) — Fase 2
+     Todo lo de acá abajo es aditivo: si no hay conexión configurada,
+     el dashboard funciona exactamente igual que antes (solo local).
+     Con conexión + sesión activa, cargarDesdeNube() reemplaza
+     `dataset` por el histórico consolidado en Supabase, así que ya
+     no hace falta volver a elegir la carpeta en cada sesión.
+     ============================================================ */
+  const CLOUD_CFG_KEY = 'glube_cloud_cfg_v1';
+  const MUESTRAS_SELECT = '*, archivo:archivos_importados(nombre)';
+  const MUESTRAS_CONFLICT = 'equipo,componente,n_muestra,fecha';
+  let sb = null;          // cliente supabase-js
+  let cloudSession = null; // sesión activa (auth), o null
+
+  function loadCloudCfg(){
+    try{ return JSON.parse(localStorage.getItem(CLOUD_CFG_KEY)) || null; }catch(e){ return null; }
+  }
+  function saveCloudCfg(cfg){
+    try{ localStorage.setItem(CLOUD_CFG_KEY, JSON.stringify(cfg)); }catch(e){/* ignorar */}
+  }
+
+  function cloudMsg(text, type){
+    const el = $('cloudMsg');
+    el.textContent = text || '';
+    el.className = 'cloud-msg' + (type ? ' show ' + type : (text ? ' show' : ''));
+  }
+
+  function updateCloudPill(){
+    const pill = $('cloudStatusPill');
+    if(cloudSession){
+      pill.className = 'btn cloud-pill linked';
+      pill.textContent = '☁️ ' + cloudSession.user.email;
+    }else if(sb){
+      pill.className = 'btn cloud-pill unlinked';
+      pill.textContent = '☁️ Nube: iniciar sesión';
+    }else{
+      pill.className = 'btn cloud-pill unlinked';
+      pill.textContent = '☁️ Nube: sin configurar';
+    }
+    $('btnCloudUpload').style.display = cloudSession ? 'inline-flex' : 'none';
+  }
+
+  function showCloudBoxes(){
+    $('cloudSessionBox').style.display = cloudSession ? 'flex' : 'none';
+    $('cloudConfigBox').style.display = sb ? 'none' : 'block';
+    $('cloudLoginBox').style.display = (sb && !cloudSession) ? 'block' : 'none';
+  }
+
+  function initCloudClient(cfg){
+    if(!cfg || !cfg.url || !cfg.anonKey) return;
+    $('cloudUrl').value = cfg.url;
+    $('cloudAnonKey').value = cfg.anonKey;
+    try{
+      sb = window.supabase.createClient(cfg.url, cfg.anonKey);
+      sb.auth.onAuthStateChange((_event, session) => {
+        cloudSession = session;
+        updateCloudPill();
+        showCloudBoxes();
+        if(session) cargarDesdeNube();
+      });
+      sb.auth.getSession().then(({data}) => {
+        cloudSession = data.session;
+        updateCloudPill();
+        showCloudBoxes();
+        if(cloudSession) cargarDesdeNube();
+      });
+    }catch(e){
+      console.error(e);
+      cloudMsg('No se pudo conectar con esa URL. Revisa el valor de Project URL en Supabase.', 'err');
+    }
+  }
+
+  function cloudRowToRow(rec){
+    const vals = rec.parametros || {};
+    const estados = rec.parametros_estado || {};
+    const flags = [];
+    Object.keys(estados).forEach(param=>{
+      const st = estados[param];
+      if(st==='alerta' || st==='precaucion') flags.push({param, st, val: vals[param]});
+    });
+    return {
+      archivo: rec.archivo ? rec.archivo.nombre : '',
+      vals, estados, iso: rec.codigo_iso || '',
+      cliente: rec.cliente, operacion: rec.operacion,
+      muestra: rec.n_muestra || '', solicitud: rec.n_solicitud || '',
+      equipo: rec.equipo || '', tipoEquipo: rec.tipo_equipo,
+      marcaEquipo: rec.marca_equipo || '', modeloEquipo: rec.modelo_equipo || '',
+      componente: rec.componente || '', marcaComponente: rec.marca_componente || '',
+      modeloComponente: rec.modelo_componente || '', descriptorComponente: rec.descriptor_componente || '',
+      producto: rec.producto || '', tipoProducto: rec.tipo_producto || '',
+      edadComponente: rec.edad_componente || '', unidadEdadComponente: rec.unidad_edad_componente || '',
+      edadProducto: rec.edad_producto || '', unidadEdadProducto: rec.unidad_edad_producto || '',
+      cantidadAdicionada: rec.cantidad_adicionada || '', unidadCantidadAdicionada: rec.unidad_cantidad_adicionada || '',
+      cambioProducto: rec.cambio_producto || '', cambioFiltro: rec.cambio_filtro || '',
+      nivelServicio: rec.nivel_servicio || '',
+      estadoProducto: rec.estado_producto || '', estadoDesgaste: rec.estado_desgaste || '',
+      estadoContaminacion: rec.estado_contaminacion || '', estadoReporte: rec.estado_reporte || '',
+      correlativo: rec.correlativo || '',
+      comentarioCliente: rec.comentario_cliente || '', comentarioReporte: rec.comentario_reporte || '',
+      usuario: rec.usuario || '',
+      fecha: parseDate(rec.fecha), fechaIngreso: parseDate(rec.fecha_ingreso),
+      fechaRecepcion: parseDate(rec.fecha_recepcion), fechaInforme: parseDate(rec.fecha_informe),
+      status: rec.estado_semaforo, flags,
+    };
+  }
+
+  function rowToCloudRecord(row, archivoId){
+    const orNull = s => (s===''||s==null) ? null : s;
+    const toIso = d => d ? (d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')) : null;
+    return {
+      archivo_origen_id: archivoId,
+      cliente: row.cliente, operacion: row.operacion,
+      n_muestra: orNull(row.muestra), n_solicitud: orNull(row.solicitud),
+      equipo: orNull(row.equipo), tipo_equipo: row.tipoEquipo,
+      marca_equipo: orNull(row.marcaEquipo), modelo_equipo: orNull(row.modeloEquipo),
+      componente: orNull(row.componente), marca_componente: orNull(row.marcaComponente),
+      modelo_componente: orNull(row.modeloComponente), descriptor_componente: orNull(row.descriptorComponente),
+      producto: orNull(row.producto), tipo_producto: orNull(row.tipoProducto),
+      edad_componente: orNull(row.edadComponente), unidad_edad_componente: orNull(row.unidadEdadComponente),
+      edad_producto: orNull(row.edadProducto), unidad_edad_producto: orNull(row.unidadEdadProducto),
+      cantidad_adicionada: orNull(row.cantidadAdicionada), unidad_cantidad_adicionada: orNull(row.unidadCantidadAdicionada),
+      cambio_producto: orNull(row.cambioProducto), cambio_filtro: orNull(row.cambioFiltro),
+      nivel_servicio: orNull(row.nivelServicio),
+      estado_producto: orNull(row.estadoProducto), estado_desgaste: orNull(row.estadoDesgaste),
+      estado_contaminacion: orNull(row.estadoContaminacion), estado_reporte: orNull(row.estadoReporte),
+      correlativo: orNull(row.correlativo), codigo_iso: orNull(row.iso),
+      comentario_cliente: orNull(row.comentarioCliente), comentario_reporte: orNull(row.comentarioReporte),
+      usuario: orNull(row.usuario),
+      fecha: toIso(row.fecha), fecha_ingreso: toIso(row.fechaIngreso),
+      fecha_recepcion: toIso(row.fechaRecepcion), fecha_informe: toIso(row.fechaInforme),
+      estado_semaforo: row.status,
+      parametros: row.vals, parametros_estado: row.estados,
+    };
+  }
+
+  async function cargarDesdeNube(){
+    if(!sb || !cloudSession) return;
+    $('dashStatus').innerHTML = 'Cargando histórico desde la nube…';
+    const page = 1000;
+    let desde = 0, filas = [];
+    while(true){
+      const { data, error } = await sb.from('muestras')
+        .select(MUESTRAS_SELECT)
+        .order('fecha', { ascending: true })
+        .range(desde, desde + page - 1);
+      if(error){
+        $('dashStatus').innerHTML = 'Error cargando desde la nube: ' + esc(error.message);
+        return;
+      }
+      filas = filas.concat((data || []).map(cloudRowToRow));
+      if(!data || data.length < page) break;
+      desde += page;
+    }
+    dataset = filas;
+    filesData = [];
+    renderFileList();
+    $('dashCount').style.display = 'inline-block';
+    $('dashCount').textContent = dataset.length + ' muestras';
+    $('btnDashReload').style.display = 'none';
+    if(dataset.length){
+      $('dashEmpty').style.display = 'none';
+      $('dashBody').style.display = 'block';
+      buildFilterOptions();
+      render();
+    }else{
+      $('dashEmpty').style.display = 'block';
+      $('dashBody').style.display = 'none';
+    }
+    refreshHistorial();
+    anRefresh();
+    refreshKpiGestion();
+    $('dashStatus').innerHTML = 'Conectado a la nube · <b>' + dataset.length + '</b> muestra(s) · <b>' +
+      new Set(dataset.map(d=>d.cliente)).size + '</b> cliente(s).';
+  }
+
+  async function subirArchivosSeleccionados(){
+    if(!sb || !cloudSession) return;
+    const seleccionados = filesData.filter(f=>f.checked && f.ok);
+    if(!seleccionados.length){
+      $('dashStatus').innerHTML = 'No hay archivos activos para subir. Selecciona una carpeta primero.';
+      return;
+    }
+    $('dashStatus').innerHTML = 'Subiendo ' + seleccionados.length + ' archivo(s) a la nube…';
+    for(const f of seleccionados){
+      const { data: archivo, error: errArchivo } = await sb.from('archivos_importados')
+        .insert({ nombre: f.name }).select().single();
+      if(errArchivo){
+        $('dashStatus').innerHTML = 'Error registrando ' + esc(f.name) + ': ' + esc(errArchivo.message);
+        continue;
+      }
+      const registros = f.rows.map(r => rowToCloudRecord(r, archivo.id));
+      const { error: errMuestras } = await sb.from('muestras')
+        .upsert(registros, { onConflict: MUESTRAS_CONFLICT });
+      if(errMuestras){
+        $('dashStatus').innerHTML = 'Error subiendo muestras de ' + esc(f.name) + ': ' + esc(errMuestras.message);
+        continue;
+      }
+    }
+    await cargarDesdeNube();
+  }
+
+  // -------- eventos de la UI de conexión --------
+  $('cloudStatusPill').addEventListener('click', ()=>{
+    $('cloudOverlay').classList.add('show');
+    $('cloudDrawer').classList.add('open');
+  });
+  $('closeCloudDrawer').addEventListener('click', ()=>{
+    $('cloudOverlay').classList.remove('show');
+    $('cloudDrawer').classList.remove('open');
+  });
+  $('cloudOverlay').addEventListener('click', ()=>{
+    $('cloudOverlay').classList.remove('show');
+    $('cloudDrawer').classList.remove('open');
+  });
+
+  $('btnCloudSaveConfig').addEventListener('click', ()=>{
+    const url = $('cloudUrl').value.trim();
+    const anonKey = $('cloudAnonKey').value.trim();
+    if(!url || !anonKey){ cloudMsg('Completa la URL y la clave anon.', 'err'); return; }
+    saveCloudCfg({ url, anonKey });
+    cloudMsg('Conexión guardada.', 'ok');
+    initCloudClient({ url, anonKey });
+    showCloudBoxes();
+    updateCloudPill();
+  });
+
+  $('btnCloudEditConfig').addEventListener('click', ()=>{
+    sb = null; cloudSession = null;
+    showCloudBoxes();
+    updateCloudPill();
+  });
+
+  $('btnCloudSignIn').addEventListener('click', async ()=>{
+    if(!sb) return;
+    const email = $('cloudEmail').value.trim();
+    const password = $('cloudPassword').value;
+    if(!email || !password){ cloudMsg('Completa correo y contraseña.', 'err'); return; }
+    cloudMsg('Iniciando sesión…');
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){ cloudMsg(error.message, 'err'); return; }
+    cloudMsg('Sesión iniciada.', 'ok');
+    $('cloudPassword').value = '';
+  });
+
+  $('btnCloudSignOut').addEventListener('click', async ()=>{
+    if(!sb) return;
+    await sb.auth.signOut();
+    dataset = [];
+    $('dashEmpty').style.display = 'block';
+    $('dashBody').style.display = 'none';
+    $('dashCount').style.display = 'none';
+    $('dashStatus').innerHTML = 'Sesión cerrada.';
+  });
+
+  $('btnCloudUpload').addEventListener('click', subirArchivosSeleccionados);
+
+  // arranque: si ya había una conexión guardada, reconectar sin pedir nada
+  initCloudClient(loadCloudCfg());
+  updateCloudPill();
+  showCloudBoxes();
 })();
 </script>
 </body>

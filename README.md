@@ -12,7 +12,7 @@ más adelante, un asistente de IA sobre los comentarios de cada muestra.
 |---|---|---|
 | 0 | Esquema de base de datos (`supabase/schema.sql`) | ✅ listo para ejecutar |
 | 1 | Script de migración del histórico (`scripts/migrar-historico.mjs`) | ✅ listo para correr |
-| 2 | El tablero deja de depender de la carpeta local y lee/escribe en Supabase | pendiente |
+| 2 | El tablero deja de depender de la carpeta local y lee/escribe en Supabase | ✅ listo para conectar |
 | 3 | Login y uso multiusuario/multi-dispositivo | pendiente |
 | 4 | Asistente de IA sobre `comentarioCliente`/`comentarioReporte` | pendiente |
 | 5 | Alertas automáticas y respaldo | pendiente |
@@ -52,5 +52,31 @@ Se puede correr más de una vez sobre la misma carpeta sin duplicar datos
 equipo+componente+n° de muestra+fecha).
 
 Al terminar, la base de datos en Supabase va a tener el histórico completo
-disponible desde cualquier dispositivo — la Fase 2 es la que conecta el
-tablero HTML a esa base en vez de la carpeta local.
+disponible desde cualquier dispositivo.
+
+## Fase 2 — conectar el tablero a la nube
+
+`app/panel_semaforo.html` ahora tiene un botón **☁️ Nube** en la barra
+superior de la vista **Dashboard**. Mientras no se configure nada, el
+tablero funciona exactamente igual que antes (100% local) — la nube es
+opcional.
+
+1. Crear el primer usuario: en Supabase → **Authentication → Users** → **Add
+   user** (email + contraseña). Este es el usuario con el que el laboratorio
+   va a iniciar sesión en el tablero, no tiene por qué ser el mismo que la
+   cuenta de Supabase.
+2. Abrir `app/panel_semaforo.html` en el navegador → vista **Dashboard** →
+   botón **☁️ Nube: sin configurar**.
+3. Pegar el **Project URL** y la clave **anon public** (Project Settings →
+   API — la clave `anon` es pública, a diferencia de la `service_role` que
+   usa el script de migración) → **Guardar conexión**.
+4. Iniciar sesión con el usuario creado en el paso 1.
+
+Al iniciar sesión, el tablero trae automáticamente todo el histórico desde
+Supabase — ya no hace falta volver a elegir ninguna carpeta. Para cargar
+muestras nuevas, se sigue usando "Seleccionar carpeta" como antes; después
+de leerlas aparece un botón **Subir a la nube** que las sube y refresca el
+tablero con el consolidado (histórico + nuevas).
+
+La conexión (URL + clave anon) queda guardada en el navegador
+(`localStorage`), no en el repositorio.
