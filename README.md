@@ -13,7 +13,7 @@ más adelante, un asistente de IA sobre los comentarios de cada muestra.
 | 0 | Esquema de base de datos (`supabase/schema.sql`) | ✅ listo para ejecutar |
 | 1 | Script de migración del histórico (`scripts/migrar-historico.mjs`) | ✅ listo para correr |
 | 2 | El tablero deja de depender de la carpeta local y lee/escribe en Supabase | ✅ verificado en producción |
-| 3 | Login y uso multiusuario/multi-dispositivo | pendiente |
+| 3 | Permisos por cliente (multiusuario) | ✅ listo para migrar |
 | 4 | Asistente de IA sobre `comentarioCliente`/`comentarioReporte` | pendiente |
 | 5 | Alertas automáticas y respaldo | pendiente |
 
@@ -81,3 +81,38 @@ tablero con el consolidado (histórico + nuevas).
 
 La conexión (URL + clave anon) queda guardada en el navegador
 (`localStorage`), no en el repositorio.
+
+## Fase 3 — permisos por cliente
+
+Hasta acá, cualquier usuario logueado veía y subía datos de todos los
+clientes. Esta fase agrega una tabla `clientes` y permisos por usuario: un
+administrador ve/sube todo, el resto solo lo que se le asigne.
+
+1. En Supabase → **SQL Editor** → pegar el contenido completo de
+   `supabase/migrations/002_fase3_clientes_permisos.sql` → **Run**.
+   - Crea las tablas `clientes`, `perfiles`, `usuario_clientes`.
+   - Reconoce automáticamente los clientes que ya estaban en el histórico.
+   - Al final del archivo hay un `insert into perfiles...` que te convierte
+     a vos (el correo que está puesto ahí) en el primer administrador —
+     revisá que sea el correo correcto antes de correrlo, o cambialo.
+2. Recargá `app/panel_semaforo.html` e iniciá sesión de nuevo. En el panel
+   **☁️ Nube** debería aparecer, debajo de tu correo, "Administrador ·
+   acceso a todos los clientes", y una sección nueva **Administración de
+   accesos**.
+3. Para darle acceso a otro usuario (que ya tiene que existir en
+   Authentication → Users):
+   - Panel ☁️ Nube → **Administración de accesos**.
+   - Correo del usuario + nombre exacto del cliente (tal como aparece en
+     el Excel) → **Dar acceso**.
+   - Ese usuario, la próxima vez que inicie sesión, solo va a ver y poder
+     subir datos de los clientes que se le asignaron — el resto del
+     tablero (Dashboard, Historial, KPIs, Analytic) queda filtrado
+     automáticamente, sin ningún cambio adicional.
+4. Si alguien sube un Excel con muestras de varios clientes y no tiene
+   acceso a todos, el tablero sube solo las filas permitidas y avisa
+   cuántas quedaron afuera.
+
+No hay (todavía) una pantalla para crear usuarios nuevos ni para nombrar
+más administradores — eso se sigue haciendo desde Supabase
+(Authentication → Users, y repitiendo el `insert into perfiles` del script
+con el correo que corresponda).

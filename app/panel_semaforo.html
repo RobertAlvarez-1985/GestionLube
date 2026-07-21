@@ -178,6 +178,8 @@
   .cloud-pill{display:inline-flex;align-items:center;gap:6px;cursor:pointer;border:none;}
   .cloud-pill.linked{background:var(--lamp-green-soft);border:1px solid var(--lamp-green-border);color:#175c3d;}
   .cloud-pill.unlinked{background:var(--bg-alt);border:1px solid var(--border);color:var(--ink-soft);}
+  .cloud-access-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--border-soft);font-size:12.5px;}
+  .cloud-access-row .btn{padding:4px 9px;font-size:11px;}
 
   /* gestor de columnas */
   .colmgr-search{margin-bottom:12px;}
@@ -1245,8 +1247,27 @@
     <div id="cloudMsg" class="cloud-msg"></div>
 
     <div id="cloudSessionBox" class="cloud-session" style="display:none;">
-      <div class="who"><span id="cloudSessionEmail"></span><small>Sesión activa</small></div>
+      <div class="who"><span id="cloudSessionEmail"></span><small id="cloudAccesoScope">Sesión activa</small></div>
       <button class="btn btn-ghost" id="btnCloudSignOut">Cerrar sesión</button>
+    </div>
+
+    <div id="cloudAdminBox" style="display:none;margin-bottom:18px;">
+      <div class="colmgr-group-title" style="margin-top:0;">Administración de accesos</div>
+      <div class="cloud-field">
+        <label for="adminEmail">Correo del usuario</label>
+        <input type="email" id="adminEmail" placeholder="usuario@laboratorio.com">
+      </div>
+      <div class="cloud-field">
+        <label for="adminCliente">Cliente</label>
+        <input type="text" id="adminCliente" list="adminClientesList" placeholder="Nombre exacto del cliente">
+        <datalist id="adminClientesList"></datalist>
+        <div class="hint">Tiene que coincidir exactamente con el nombre de cliente tal como viene del Excel.</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" id="btnAdminAsignar" style="flex:1;justify-content:center;">Dar acceso</button>
+        <button class="btn btn-ghost" id="btnAdminQuitar" style="flex:1;justify-content:center;">Quitar acceso</button>
+      </div>
+      <div id="adminAccesosList" style="margin-top:14px;"></div>
     </div>
 
     <div id="cloudConfigBox">
@@ -5398,6 +5419,8 @@
   const MUESTRAS_CONFLICT = 'equipo,componente,n_muestra,fecha';
   let sb = null;          // cliente supabase-js
   let cloudSession = null; // sesión activa (auth), o null
+  let esAdmin = false;     // ¿el usuario logueado es administrador?
+  let misClientes = [];    // nombres de cliente a los que tiene acceso (todos si esAdmin)
 
   function loadCloudCfg(){
     try{ return JSON.parse(localStorage.getItem(CLOUD_CFG_KEY)) || null; }catch(e){ return null; }
@@ -5446,18 +5469,56 @@
         showCloudBoxes();
         // Solo recargar desde la nube en un login real, no en cada refresco
         // de token (si no, se pisa cualquier vista previa local sin subir).
-        if(session && !yaHabiaSesion) cargarDesdeNube();
+        if(session && !yaHabiaSesion){ cargarPermisos(); cargarDesdeNube(); }
+        if(!session){ esAdmin = false; misClientes = []; $('cloudAdminBox').style.display = 'none'; }
       });
       sb.auth.getSession().then(({data}) => {
         cloudSession = data.session;
         updateCloudPill();
         showCloudBoxes();
-        if(cloudSession) cargarDesdeNube();
+        if(cloudSession){ cargarPermisos(); cargarDesdeNube(); }
       });
     }catch(e){
       console.error(e);
       cloudMsg('No se pudo conectar con esa URL. Revisa el valor de Project URL en Supabase.', 'err');
     }
+  }
+
+  async function cargarPermisos(){
+    if(!sb || !cloudSession) return;
+    const [{ data: admin, error: errAdmin }, { data: clientesNombres, error: errClientes }] = await Promise.all([
+      sb.rpc('soy_admin'),
+      sb.rpc('mis_clientes_nombres'),
+    ]);
+    esAdmin = !errAdmin && !!admin;
+    misClientes = errClientes ? [] : (clientesNombres || []);
+
+    $('cloudAccesoScope').textContent = esAdmin
+      ? 'Administrador · acceso a todos los clientes'
+      : (misClientes.length ? 'Acceso a: ' + misClientes.join(', ') : 'Sin clientes asignados todavía');
+
+    $('cloudAdminBox').style.display = esAdmin ? 'block' : 'none';
+    if(esAdmin){
+      refrescarClientesDatalist();
+      refrescarListaAccesos();
+    }
+  }
+
+  async function refrescarClientesDatalist(){
+    const { data, error } = await sb.from('clientes').select('nombre').order('nombre');
+    if(error) return;
+    $('adminClientesList').innerHTML = (data || [])
+      .map(c => '<option value="' + esc(c.nombre) + '">').join('');
+  }
+
+  async function refrescarListaAccesos(){
+    const { data, error } = await sb.rpc('admin_listar_accesos');
+    const box = $('adminAccesosList');
+    if(error){ box.innerHTML = '<div class="hint">No se pudo cargar la lista de accesos.</div>'; return; }
+    if(!data || !data.length){ box.innerHTML = '<div class="hint">Todavía no hay accesos asignados.</div>'; return; }
+    box.innerHTML = data.map(a =>
+      '<div class="cloud-access-row"><span>' + esc(a.email) + ' → <b>' + esc(a.cliente) + '</b></span></div>'
+    ).join('');
   }
 
   function cloudRowToRow(rec){
@@ -5572,6 +5633,7 @@
     }
     $('dashStatus').innerHTML = 'Subiendo ' + seleccionados.length + ' archivo(s) a la nube…';
     let huboError = false;
+    let omitidas = 0;
     for(const f of seleccionados){
       const { data: archivo, error: errArchivo } = await sb.from('archivos_importados')
         .insert({ nombre: f.name }).select().single();
@@ -5580,7 +5642,13 @@
         $('dashStatus').innerHTML = 'Error registrando ' + esc(f.name) + ': ' + esc(errArchivo.message);
         continue;
       }
-      const registros = f.rows.map(r => rowToCloudRecord(r, archivo.id));
+      // Si el usuario no es admin, se filtran acá las filas de clientes a
+      // los que no tiene acceso -si no, una sola fila fuera de alcance
+      // hace fallar todo el lote por la política de seguridad (RLS)-.
+      const filas = esAdmin ? f.rows : f.rows.filter(r => misClientes.includes(r.cliente));
+      omitidas += f.rows.length - filas.length;
+      if(!filas.length) continue;
+      const registros = filas.map(r => rowToCloudRecord(r, archivo.id));
       const { error: errMuestras } = await sb.from('muestras')
         .upsert(registros, { onConflict: MUESTRAS_CONFLICT });
       if(errMuestras){
@@ -5593,6 +5661,9 @@
     // "Cargando histórico..." — recargar desde la nube solo cuando salió bien.
     if(huboError) return;
     await cargarDesdeNube();
+    if(omitidas > 0){
+      $('dashStatus').innerHTML += ' · <b>' + omitidas + '</b> fila(s) omitida(s) por pertenecer a clientes fuera de tu acceso.';
+    }
   }
 
   // -------- eventos de la UI de conexión --------
@@ -5649,6 +5720,28 @@
   });
 
   $('btnCloudUpload').addEventListener('click', subirArchivosSeleccionados);
+
+  $('btnAdminAsignar').addEventListener('click', async ()=>{
+    const email = $('adminEmail').value.trim();
+    const cliente = $('adminCliente').value.trim();
+    if(!email || !cliente){ cloudMsg('Completa el correo y el cliente.', 'err'); return; }
+    const { error } = await sb.rpc('admin_asignar_cliente', { p_email: email, p_cliente: cliente });
+    if(error){ cloudMsg(error.message, 'err'); return; }
+    cloudMsg('Acceso otorgado a ' + email + ' para ' + cliente + '.', 'ok');
+    $('adminCliente').value = '';
+    refrescarClientesDatalist();
+    refrescarListaAccesos();
+  });
+
+  $('btnAdminQuitar').addEventListener('click', async ()=>{
+    const email = $('adminEmail').value.trim();
+    const cliente = $('adminCliente').value.trim();
+    if(!email || !cliente){ cloudMsg('Completa el correo y el cliente.', 'err'); return; }
+    const { error } = await sb.rpc('admin_quitar_cliente', { p_email: email, p_cliente: cliente });
+    if(error){ cloudMsg(error.message, 'err'); return; }
+    cloudMsg('Acceso quitado a ' + email + ' para ' + cliente + '.', 'ok');
+    refrescarListaAccesos();
+  });
 
   // arranque: si ya había una conexión guardada, reconectar sin pedir nada
   initCloudClient(loadCloudCfg());
