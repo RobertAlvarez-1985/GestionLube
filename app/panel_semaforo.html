@@ -1284,6 +1284,10 @@
     </div>
 
     <div id="cloudLoginBox" style="display:none;margin-top:18px;">
+      <div class="seg" style="margin-bottom:16px;">
+        <button type="button" id="tabCloudSignIn" class="active" style="flex:1;justify-content:center;">Iniciar sesión</button>
+        <button type="button" id="tabCloudSignUp" style="flex:1;justify-content:center;">Crear cuenta</button>
+      </div>
       <div class="cloud-field">
         <label for="cloudEmail">Correo</label>
         <input type="email" id="cloudEmail" placeholder="usuario@laboratorio.com" autocomplete="username">
@@ -1291,9 +1295,10 @@
       <div class="cloud-field">
         <label for="cloudPassword">Contraseña</label>
         <input type="password" id="cloudPassword" placeholder="••••••••" autocomplete="current-password">
+        <div class="hint" id="cloudPasswordHint" style="display:none;">Mínimo 6 caracteres.</div>
       </div>
       <button class="btn btn-primary" id="btnCloudSignIn" style="width:100%;justify-content:center;">Iniciar sesión</button>
-      <div class="hint" style="margin-top:8px;">El usuario se crea desde Supabase → Authentication → Add user.</div>
+      <div class="hint" id="cloudSignUpHint" style="margin-top:8px;display:none;">Al crear la cuenta vas a quedar sin acceso a ningún cliente hasta que un administrador te lo asigne.</div>
       <button class="btn btn-ghost" id="btnCloudEditConfig" style="width:100%;justify-content:center;margin-top:10px;">Cambiar conexión</button>
     </div>
   </div>
@@ -5697,11 +5702,41 @@
     updateCloudPill();
   });
 
+  let cloudAuthMode = 'signin';
+
+  function setCloudAuthMode(mode){
+    cloudAuthMode = mode;
+    $('tabCloudSignIn').classList.toggle('active', mode==='signin');
+    $('tabCloudSignUp').classList.toggle('active', mode==='signup');
+    $('btnCloudSignIn').textContent = mode==='signin' ? 'Iniciar sesión' : 'Crear cuenta';
+    $('cloudPasswordHint').style.display = mode==='signup' ? 'block' : 'none';
+    $('cloudSignUpHint').style.display = mode==='signup' ? 'block' : 'none';
+    cloudMsg('');
+  }
+  $('tabCloudSignIn').addEventListener('click', ()=>setCloudAuthMode('signin'));
+  $('tabCloudSignUp').addEventListener('click', ()=>setCloudAuthMode('signup'));
+
   $('btnCloudSignIn').addEventListener('click', async ()=>{
     if(!sb) return;
     const email = $('cloudEmail').value.trim();
     const password = $('cloudPassword').value;
     if(!email || !password){ cloudMsg('Completa correo y contraseña.', 'err'); return; }
+
+    if(cloudAuthMode === 'signup'){
+      if(password.length < 6){ cloudMsg('La contraseña tiene que tener al menos 6 caracteres.', 'err'); return; }
+      cloudMsg('Creando cuenta…');
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if(error){ cloudMsg(error.message, 'err'); return; }
+      if(data.session){
+        cloudMsg('Cuenta creada. Sesión iniciada.', 'ok');
+      }else{
+        cloudMsg('Cuenta creada. Revisá tu correo para confirmarla antes de iniciar sesión.', 'ok');
+        setCloudAuthMode('signin');
+      }
+      $('cloudPassword').value = '';
+      return;
+    }
+
     cloudMsg('Iniciando sesión…');
     const { error } = await sb.auth.signInWithPassword({ email, password });
     if(error){ cloudMsg(error.message, 'err'); return; }
@@ -5717,6 +5752,7 @@
     $('dashBody').style.display = 'none';
     $('dashCount').style.display = 'none';
     $('dashStatus').innerHTML = 'Sesión cerrada.';
+    setCloudAuthMode('signin');
   });
 
   $('btnCloudUpload').addEventListener('click', subirArchivosSeleccionados);

@@ -99,8 +99,13 @@ administrador ve/sube todo, el resto solo lo que se le asigne.
    **☁️ Nube** debería aparecer, debajo de tu correo, "Administrador ·
    acceso a todos los clientes", y una sección nueva **Administración de
    accesos**.
-3. Para darle acceso a otro usuario (que ya tiene que existir en
-   Authentication → Users):
+3. El panel ☁️ Nube tiene dos pestañas: **Iniciar sesión** y **Crear
+   cuenta**. Cualquier persona del laboratorio puede crear su propia
+   cuenta (correo + contraseña) desde ahí — al crearla queda **sin acceso
+   a ningún cliente** hasta que un administrador se lo asigne, así que no
+   hay riesgo en dejar la creación de cuentas abierta.
+4. Para darle acceso a un cliente a un usuario (ya sea que se creó su
+   cuenta solo, o que se la creaste vos en Authentication → Users):
    - Panel ☁️ Nube → **Administración de accesos**.
    - Correo del usuario + nombre exacto del cliente (tal como aparece en
      el Excel) → **Dar acceso**.
@@ -108,11 +113,11 @@ administrador ve/sube todo, el resto solo lo que se le asigne.
      subir datos de los clientes que se le asignaron — el resto del
      tablero (Dashboard, Historial, KPIs, Analytic) queda filtrado
      automáticamente, sin ningún cambio adicional.
-4. Si alguien sube un Excel con muestras de varios clientes y no tiene
+5. Si alguien sube un Excel con muestras de varios clientes y no tiene
    acceso a todos, el tablero sube solo las filas permitidas y avisa
    cuántas quedaron afuera.
 
-No hay (todavía) una pantalla para crear usuarios nuevos ni para nombrar
-más administradores — eso se sigue haciendo desde Supabase
-(Authentication → Users, y repitiendo el `insert into perfiles` del script
-con el correo que corresponda).
+Nombrar a otro administrador (alguien que vea *todos* los clientes) sigue
+siendo manual: se hace repitiendo el `insert into perfiles...` del final
+de `002_fase3_clientes_permisos.sql` con el correo que corresponda, desde
+el SQL Editor de Supabase.
