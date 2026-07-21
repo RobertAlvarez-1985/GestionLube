@@ -686,15 +686,17 @@
         <button class="btn btn-ghost" id="btnDashClear">Limpiar</button>
       </div>
       <div class="dash-status" id="dashStatus"></div>
-      <button class="btn btn-ghost dash-files-toggle" id="dashFilesToggle" style="display:none;">
-        <span id="dashFilesSummary"></span>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="chev"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-ghost dash-files-toggle" id="dashFilesToggle" style="display:none;">
+          <span id="dashFilesSummary"></span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="chev"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <button class="btn btn-primary" id="btnCloudUpload" style="display:none;">Subir a la nube</button>
+      </div>
       <div class="file-list-panel" id="dashFilesPanel" style="display:none;">
         <div class="file-list-actions">
           <button class="btn btn-ghost" id="dashFilesAll">Marcar todos</button>
           <button class="btn btn-ghost" id="dashFilesNone">Desmarcar todos</button>
-          <button class="btn btn-primary" id="btnCloudUpload" style="display:none;">Subir a la nube</button>
         </div>
         <div class="file-list" id="dashFiles"></div>
       </div>
@@ -5437,11 +5439,14 @@
     $('cloudAnonKey').value = cfg.anonKey;
     try{
       sb = window.supabase.createClient(cfg.url, cfg.anonKey);
-      sb.auth.onAuthStateChange((_event, session) => {
+      sb.auth.onAuthStateChange((event, session) => {
+        const yaHabiaSesion = !!cloudSession;
         cloudSession = session;
         updateCloudPill();
         showCloudBoxes();
-        if(session) cargarDesdeNube();
+        // Solo recargar desde la nube en un login real, no en cada refresco
+        // de token (si no, se pisa cualquier vista previa local sin subir).
+        if(session && !yaHabiaSesion) cargarDesdeNube();
       });
       sb.auth.getSession().then(({data}) => {
         cloudSession = data.session;
