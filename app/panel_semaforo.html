@@ -5571,10 +5571,12 @@
       return;
     }
     $('dashStatus').innerHTML = 'Subiendo ' + seleccionados.length + ' archivo(s) a la nube…';
+    let huboError = false;
     for(const f of seleccionados){
       const { data: archivo, error: errArchivo } = await sb.from('archivos_importados')
         .insert({ nombre: f.name }).select().single();
       if(errArchivo){
+        huboError = true;
         $('dashStatus').innerHTML = 'Error registrando ' + esc(f.name) + ': ' + esc(errArchivo.message);
         continue;
       }
@@ -5582,10 +5584,14 @@
       const { error: errMuestras } = await sb.from('muestras')
         .upsert(registros, { onConflict: MUESTRAS_CONFLICT });
       if(errMuestras){
+        huboError = true;
         $('dashStatus').innerHTML = 'Error subiendo muestras de ' + esc(f.name) + ': ' + esc(errMuestras.message);
         continue;
       }
     }
+    // Si hubo un error, dejamos el mensaje visible en vez de taparlo con
+    // "Cargando histórico..." — recargar desde la nube solo cuando salió bien.
+    if(huboError) return;
     await cargarDesdeNube();
   }
 

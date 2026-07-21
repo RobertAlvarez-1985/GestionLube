@@ -87,9 +87,12 @@ create index if not exists idx_muestras_estado on muestras (estado_semaforo);
 create index if not exists idx_muestras_fecha on muestras (fecha);
 create index if not exists idx_muestras_parametros on muestras using gin (parametros);
 
--- evita duplicar la misma muestra si el script de migración se corre más de una vez
-create unique index if not exists uq_muestras_natural_key
-  on muestras (equipo, componente, coalesce(n_muestra,''), coalesce(fecha,'epoch'::date));
+-- evita duplicar la misma muestra si se sube/migra más de una vez.
+-- Tiene que ser una restricción simple sobre las columnas (no una expresión),
+-- porque así es como Postgres resuelve "ON CONFLICT (equipo,componente,n_muestra,fecha)"
+-- al hacer upsert desde el tablero y desde el script de migración.
+alter table muestras
+  add constraint uq_muestras_natural_key unique (equipo, componente, n_muestra, fecha);
 
 -- ------------------------------------------------------------
 -- recomendaciones_ia: caché de la sugerencia de IA por muestra
