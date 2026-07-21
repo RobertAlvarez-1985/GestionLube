@@ -12,7 +12,7 @@ más adelante, un asistente de IA sobre los comentarios de cada muestra.
 |---|---|---|
 | 0 | Esquema de base de datos (`supabase/schema.sql`) | ✅ listo para ejecutar |
 | 1 | Script de migración del histórico (`scripts/migrar-historico.mjs`) | ✅ listo para correr |
-| 2 | El tablero deja de depender de la carpeta local y lee/escribe en Supabase | ✅ listo para conectar |
+| 2 | El tablero deja de depender de la carpeta local y lee/escribe en Supabase | ✅ verificado en producción |
 | 3 | Login y uso multiusuario/multi-dispositivo | pendiente |
 | 4 | Asistente de IA sobre `comentarioCliente`/`comentarioReporte` | pendiente |
 | 5 | Alertas automáticas y respaldo | pendiente |
@@ -28,7 +28,8 @@ más adelante, un asistente de IA sobre los comentarios de cada muestra.
    que prefieran) para poder crear el primer usuario.
 4. En **Project Settings → API**, copiar:
    - `Project URL` → `SUPABASE_URL`
-   - `service_role` key (secreta, no la `anon`) → `SUPABASE_SERVICE_ROLE_KEY`
+   - **Secret key** (`sb_secret_...` — el reemplazo actual de la vieja
+     `service_role`, no la Publishable) → `SUPABASE_SERVICE_ROLE_KEY`
 
 Guardar esos dos valores en un archivo `.env` en la raíz del repo (copiar
 `.env.example` como base). **No se sube al repositorio** (ya está en
@@ -67,8 +68,8 @@ opcional.
    cuenta de Supabase.
 2. Abrir `app/panel_semaforo.html` en el navegador → vista **Dashboard** →
    botón **☁️ Nube: sin configurar**.
-3. Pegar el **Project URL** y la clave **anon public** (Project Settings →
-   API — la clave `anon` es pública, a diferencia de la `service_role` que
+3. Pegar el **Project URL** y la **Publishable key** (`sb_publishable_...`,
+   Project Settings → API — es pública, a diferencia de la Secret key que
    usa el script de migración) → **Guardar conexión**.
 4. Iniciar sesión con el usuario creado en el paso 1.
 
