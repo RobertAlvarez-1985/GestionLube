@@ -2583,21 +2583,27 @@
     if(!texto) return '';
     let oraciones = dividirEnOraciones(texto);
     if(oraciones.length <= 1) return String(texto).trim();
-
-    // 1) si todo el comentario es un bloque de N oraciones repetido k veces
-    // seguidas, se deja solo una copia del bloque
     const n = oraciones.length;
-    for(let periodo=1; periodo<=Math.floor(n/2); periodo++){
-      if(n % periodo !== 0) continue;
-      const reps = n/periodo;
-      if(reps < 2) continue;
-      let ok = true;
-      for(let r=1; r<reps && ok; r++){
-        for(let i=0; i<periodo; i++){
-          if(normOracion(oraciones[i]) !== normOracion(oraciones[r*periodo+i])){ ok=false; break; }
+
+    // 1) buscar el bloque inicial (una o varias oraciones) que se repite
+    // consecutivamente la mayor cantidad de oraciones posible -sin exigir
+    // que ocupe el comentario completo: puede haber oraciones sueltas y
+    // distintas después del bloque repetido, y quedan tal cual-.
+    let mejorK = 0, mejorR = 1, mejorCobertura = 0;
+    for(let k=1; k<=Math.floor(n/2); k++){
+      let r = 1;
+      while((r+1)*k <= n){
+        let iguales = true;
+        for(let i=0; i<k; i++){
+          if(normOracion(oraciones[r*k+i]) !== normOracion(oraciones[i])){ iguales=false; break; }
         }
+        if(!iguales) break;
+        r++;
       }
-      if(ok){ oraciones = oraciones.slice(0,periodo); break; }
+      if(r >= 2 && r*k > mejorCobertura){ mejorK = k; mejorR = r; mejorCobertura = r*k; }
+    }
+    if(mejorK > 0){
+      oraciones = oraciones.slice(0, mejorK).concat(oraciones.slice(mejorR*mejorK));
     }
 
     // 2) pasada extra: por si queda alguna oración consecutiva idéntica suelta
