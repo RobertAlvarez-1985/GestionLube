@@ -121,3 +121,26 @@ Nombrar a otro administrador (alguien que vea *todos* los clientes) sigue
 siendo manual: se hace repitiendo el `insert into perfiles...` del final
 de `002_fase3_clientes_permisos.sql` con el correo que corresponda, desde
 el SQL Editor de Supabase.
+
+## Fase 3b — acceso por operación dentro de un cliente
+
+Además de darle a un usuario acceso a **todo** un cliente, ahora se puede
+limitarlo a **operaciones puntuales** dentro de ese cliente (la columna
+"operación" que ya viene del Excel), y un mismo usuario puede tener
+**varios clientes y operaciones combinados**.
+
+1. En Supabase → **SQL Editor** → pegar el contenido completo de
+   `supabase/migrations/003_operaciones_por_cliente.sql` → **Run**.
+2. En el panel ☁️ Nube → **Administración de accesos**, al escribir el
+   nombre de un cliente que ya tiene muestras cargadas, aparece una lista
+   de casilleros con sus operaciones:
+   - Sin marcar ninguna → **Dar acceso** le da acceso a todo el cliente
+     (igual que antes).
+   - Marcando una o varias → le da acceso solo a esas operaciones de ese
+     cliente, sin ver el resto.
+3. La sección **Accesos actuales** lista cada permiso otorgado (a qué
+   usuario, qué cliente, y si es "todas las operaciones" o una puntual),
+   con un botón **Quitar** por fila.
+4. Podés repetir el paso 2 las veces que quieras para el mismo usuario:
+   sumar otro cliente, u otra operación de otro cliente — todo se
+   acumula, no se reemplaza.

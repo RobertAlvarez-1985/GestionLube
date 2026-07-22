@@ -179,7 +179,12 @@
   .cloud-pill.linked{background:var(--lamp-green-soft);border:1px solid var(--lamp-green-border);color:#175c3d;}
   .cloud-pill.unlinked{background:var(--bg-alt);border:1px solid var(--border);color:var(--ink-soft);}
   .cloud-access-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--border-soft);font-size:12.5px;}
-  .cloud-access-row .btn{padding:4px 9px;font-size:11px;}
+  .cloud-access-row .btn{padding:4px 9px;font-size:11px;flex-shrink:0;}
+  .cloud-access-row .desc{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .cloud-op-list{max-height:150px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--bg-alt);margin-bottom:14px;}
+  .cloud-op-item{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:12.5px;}
+  .cloud-op-item input{margin:0;flex-shrink:0;}
+  .cloud-op-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   /* gestor de columnas */
   .colmgr-search{margin-bottom:12px;}
@@ -1263,13 +1268,15 @@
         <label for="adminCliente">Cliente</label>
         <input type="text" id="adminCliente" list="adminClientesList" placeholder="Nombre exacto del cliente">
         <datalist id="adminClientesList"></datalist>
-        <div class="hint">Tiene que coincidir exactamente con el nombre de cliente tal como viene del Excel.</div>
+        <div class="hint">Tiene que coincidir exactamente con el nombre de cliente tal como viene del Excel. Podés repetir este paso para darle acceso a más de un cliente.</div>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-primary" id="btnAdminAsignar" style="flex:1;justify-content:center;">Dar acceso</button>
-        <button class="btn btn-ghost" id="btnAdminQuitar" style="flex:1;justify-content:center;">Quitar acceso</button>
+      <div id="adminOperacionesBox" style="display:none;">
+        <div class="hint" style="margin-bottom:6px;">Dejá todas sin marcar para dar acceso a <b>todo</b> el cliente, o marcá solo algunas para limitar el acceso a esas operaciones.</div>
+        <div id="adminOperacionesList" class="cloud-op-list"></div>
       </div>
-      <div id="adminAccesosList" style="margin-top:14px;"></div>
+      <button class="btn btn-primary" id="btnAdminAsignar" style="width:100%;justify-content:center;">Dar acceso</button>
+      <div class="colmgr-group-title">Accesos actuales</div>
+      <div id="adminAccesosList"></div>
     </div>
 
     <div id="cloudConfigBox">
@@ -5493,16 +5500,29 @@
 
   async function cargarPermisos(){
     if(!sb || !cloudSession) return;
-    const [{ data: admin, error: errAdmin }, { data: clientesNombres, error: errClientes }] = await Promise.all([
+    const [
+      { data: admin, error: errAdmin },
+      { data: clientesNombres, error: errClientes },
+      { data: operacionesDetalle, error: errOps },
+    ] = await Promise.all([
       sb.rpc('soy_admin'),
       sb.rpc('mis_clientes_nombres'),
+      sb.rpc('mis_operaciones_detalle'),
     ]);
     esAdmin = !errAdmin && !!admin;
     misClientes = errClientes ? [] : (clientesNombres || []);
+    const misOperaciones = errOps ? [] : (operacionesDetalle || []);
 
-    $('cloudAccesoScope').textContent = esAdmin
-      ? 'Administrador · acceso a todos los clientes'
-      : (misClientes.length ? 'Acceso a: ' + misClientes.join(', ') : 'Sin clientes asignados todavía');
+    if(esAdmin){
+      $('cloudAccesoScope').textContent = 'Administrador · acceso a todos los clientes';
+    }else{
+      const partes = misClientes.map(c => c + ' (todas las operaciones)');
+      // agrupar operaciones puntuales por cliente para que se lea "Cliente → Op1, Op2"
+      const porCliente = {};
+      misOperaciones.forEach(o => { (porCliente[o.cliente] ||= []).push(o.operacion); });
+      Object.keys(porCliente).forEach(c => partes.push(c + ' → ' + porCliente[c].join(', ')));
+      $('cloudAccesoScope').textContent = partes.length ? 'Acceso a: ' + partes.join(' · ') : 'Sin clientes asignados todavía';
+    }
 
     $('cloudAdminBox').style.display = esAdmin ? 'block' : 'none';
     if(esAdmin){
@@ -5518,14 +5538,42 @@
       .map(c => '<option value="' + esc(c.nombre) + '">').join('');
   }
 
+  async function refrescarOperacionesDeCliente(){
+    const cliente = $('adminCliente').value.trim();
+    const box = $('adminOperacionesBox');
+    const list = $('adminOperacionesList');
+    if(!cliente){ box.style.display = 'none'; list.innerHTML = ''; return; }
+    const { data, error } = await sb.rpc('operaciones_de_cliente', { p_cliente: cliente });
+    if(error || !data || !data.length){ box.style.display = 'none'; list.innerHTML = ''; return; }
+    list.innerHTML = data.map(op =>
+      '<label class="cloud-op-item"><input type="checkbox" value="' + esc(op) + '"><span>' + esc(op) + '</span></label>'
+    ).join('');
+    box.style.display = 'block';
+  }
+
   async function refrescarListaAccesos(){
     const { data, error } = await sb.rpc('admin_listar_accesos');
     const box = $('adminAccesosList');
     if(error){ box.innerHTML = '<div class="hint">No se pudo cargar la lista de accesos.</div>'; return; }
     if(!data || !data.length){ box.innerHTML = '<div class="hint">Todavía no hay accesos asignados.</div>'; return; }
-    box.innerHTML = data.map(a =>
-      '<div class="cloud-access-row"><span>' + esc(a.email) + ' → <b>' + esc(a.cliente) + '</b></span></div>'
-    ).join('');
+    box.innerHTML = data.map(a => {
+      const alcance = a.operacion ? esc(a.operacion) : '<i>todas las operaciones</i>';
+      return '<div class="cloud-access-row">'
+        + '<span class="desc" title="' + esc(a.email) + ' → ' + esc(a.cliente) + '">' + esc(a.email) + ' → <b>' + esc(a.cliente) + '</b> · ' + alcance + '</span>'
+        + '<button class="btn btn-ghost" data-email="' + esc(a.email) + '" data-cliente="' + esc(a.cliente) + '" data-operacion="' + esc(a.operacion || '') + '">Quitar</button>'
+        + '</div>';
+    }).join('');
+    box.querySelectorAll('button[data-email]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const email = btn.dataset.email, cliente = btn.dataset.cliente, operacion = btn.dataset.operacion;
+        const { error } = operacion
+          ? await sb.rpc('admin_quitar_operacion', { p_email: email, p_cliente: cliente, p_operacion: operacion })
+          : await sb.rpc('admin_quitar_cliente', { p_email: email, p_cliente: cliente });
+        if(error){ cloudMsg(error.message, 'err'); return; }
+        cloudMsg('Acceso quitado a ' + email + '.', 'ok');
+        refrescarListaAccesos();
+      });
+    });
   }
 
   function cloudRowToRow(rec){
@@ -5759,25 +5807,31 @@
 
   $('btnCloudUpload').addEventListener('click', subirArchivosSeleccionados);
 
+  $('adminCliente').addEventListener('change', refrescarOperacionesDeCliente);
+
   $('btnAdminAsignar').addEventListener('click', async ()=>{
     const email = $('adminEmail').value.trim();
     const cliente = $('adminCliente').value.trim();
     if(!email || !cliente){ cloudMsg('Completa el correo y el cliente.', 'err'); return; }
-    const { error } = await sb.rpc('admin_asignar_cliente', { p_email: email, p_cliente: cliente });
-    if(error){ cloudMsg(error.message, 'err'); return; }
-    cloudMsg('Acceso otorgado a ' + email + ' para ' + cliente + '.', 'ok');
-    $('adminCliente').value = '';
-    refrescarClientesDatalist();
-    refrescarListaAccesos();
-  });
 
-  $('btnAdminQuitar').addEventListener('click', async ()=>{
-    const email = $('adminEmail').value.trim();
-    const cliente = $('adminCliente').value.trim();
-    if(!email || !cliente){ cloudMsg('Completa el correo y el cliente.', 'err'); return; }
-    const { error } = await sb.rpc('admin_quitar_cliente', { p_email: email, p_cliente: cliente });
-    if(error){ cloudMsg(error.message, 'err'); return; }
-    cloudMsg('Acceso quitado a ' + email + ' para ' + cliente + '.', 'ok');
+    const operacionesElegidas = [...document.querySelectorAll('#adminOperacionesList input:checked')].map(i => i.value);
+
+    if(!operacionesElegidas.length){
+      const { error } = await sb.rpc('admin_asignar_cliente', { p_email: email, p_cliente: cliente });
+      if(error){ cloudMsg(error.message, 'err'); return; }
+      cloudMsg('Acceso otorgado a ' + email + ' para todo ' + cliente + '.', 'ok');
+    }else{
+      for(const operacion of operacionesElegidas){
+        const { error } = await sb.rpc('admin_asignar_operacion', { p_email: email, p_cliente: cliente, p_operacion: operacion });
+        if(error){ cloudMsg(error.message, 'err'); return; }
+      }
+      cloudMsg('Acceso otorgado a ' + email + ' para ' + operacionesElegidas.length + ' operación(es) de ' + cliente + '.', 'ok');
+    }
+
+    $('adminCliente').value = '';
+    $('adminOperacionesBox').style.display = 'none';
+    $('adminOperacionesList').innerHTML = '';
+    refrescarClientesDatalist();
     refrescarListaAccesos();
   });
 
