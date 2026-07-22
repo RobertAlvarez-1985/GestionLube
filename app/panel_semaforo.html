@@ -287,12 +287,14 @@
   .dash-filters label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);display:block;margin-bottom:3px;}
   .dash-filters select,.dash-filters input[type=date]{border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12.5px;font-family:inherit;background:#fff;color:var(--ink);min-width:160px;}
   .grid-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:18px;}
-  .chart-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:16px 18px;}
+  .chart-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:16px 18px;min-width:0;}
   .chart-card h4{margin:0 0 2px;font-family:'Space Grotesk',sans-serif;font-size:13.5px;}
   .chart-card .sub{margin:0 0 12px;font-size:11.5px;color:var(--ink-faint);}
-  .chart-box{position:relative;height:280px;}
+  .chart-box{position:relative;height:280px;min-width:0;}
   .chart-box.tall{height:340px;}
   .dash-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+  .dash-grid-2 > *{min-width:0;}
+  canvas{max-width:100%;}
   .dash-tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
   .dash-tbl th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);border-bottom:1px solid var(--border);padding:8px 10px;}
   .dash-tbl td{padding:8px 10px;border-bottom:1px solid var(--border-soft);}
@@ -432,10 +434,10 @@
   table.rep-tbl td.cell-y{background:var(--warn-bg)!important;color:var(--warn-text);font-weight:700;}
   table.rep-tbl td.cell-r{background:var(--danger-bg)!important;color:var(--danger-text);font-weight:700;}
   .rep-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px;margin-top:8px;}
-  .rep-chart-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:14px 16px;}
+  .rep-chart-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:14px 16px;min-width:0;}
   .rep-chart-card h5{margin:0 0 10px;font-size:12.5px;font-family:'Space Grotesk',sans-serif;display:flex;align-items:center;gap:7px;}
   .rep-chart-card h5 .dotc{width:8px;height:8px;border-radius:50%;}
-  .rep-chart-box{position:relative;height:230px;}
+  .rep-chart-box{position:relative;height:230px;min-width:0;}
   .iso-ref{margin-top:10px;font-size:11.5px;color:var(--ink-soft);}
   .iso-ref table{border-collapse:collapse;font-size:11px;width:100%;max-width:520px;}
   .iso-ref th,.iso-ref td{border:1px solid var(--border);padding:5px 9px;text-align:center;}
@@ -484,11 +486,11 @@
   .an-sub{display:none;}
   .an-sub.show{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;}
 
-  .an-main{display:grid;grid-template-columns:1fr;gap:16px;}
-  .an-chart-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:18px 20px;}
+  .an-main{display:grid;grid-template-columns:1fr;gap:16px;min-width:0;}
+  .an-chart-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:18px 20px;min-width:0;}
   .an-chart-card h4{margin:0 0 3px;font-family:'Space Grotesk',sans-serif;font-size:15px;}
   .an-chart-card .sub{margin:0 0 12px;font-size:12px;color:var(--ink-faint);}
-  .an-chart-box{position:relative;height:420px;}
+  .an-chart-box{position:relative;height:420px;min-width:0;}
   .an-note{font-size:11.5px;color:var(--ink-soft);margin-top:8px;background:var(--bg-alt);border:1px solid var(--border);border-radius:7px;padding:8px 11px;}
 
   .an-stats-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:16px 18px;margin-top:16px;}
@@ -5777,6 +5779,26 @@
     if(error){ cloudMsg(error.message, 'err'); return; }
     cloudMsg('Acceso quitado a ' + email + ' para ' + cliente + '.', 'ok');
     refrescarListaAccesos();
+  });
+
+  /* ============================================================
+     Ajuste de gráficos al cambiar de tamaño la ventana / el zoom,
+     o al volver a una pestaña que estaba oculta (display:none).
+     Chart.js mide el contenedor al crear el gráfico; si en ese
+     momento la pestaña estaba oculta, o la ventana cambia de tamaño
+     después, hay que forzar un resize explícito.
+     ============================================================ */
+  function resizeAllCharts(){
+    if(typeof Chart === 'undefined' || !Chart.instances) return;
+    Object.values(Chart.instances).forEach(c => { try{ c.resize(); }catch(e){} });
+  }
+  let resizeChartsTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeChartsTimer);
+    resizeChartsTimer = setTimeout(resizeAllCharts, 150);
+  });
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => setTimeout(resizeAllCharts, 30));
   });
 
   // arranque: si ya había una conexión guardada, reconectar sin pedir nada
