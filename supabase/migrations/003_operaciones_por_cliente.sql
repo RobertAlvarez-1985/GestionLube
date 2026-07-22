@@ -134,6 +134,11 @@ grant execute on function admin_quitar_operacion(text,text,text) to authenticate
 -- operación puntual (operacion queda en null en las filas de
 -- acceso al cliente completo)
 -- ------------------------------------------------------------
+-- se borra primero: cambia la forma de las columnas de salida
+-- respecto de la versión de la Fase 3 (2 columnas -> 3), y
+-- Postgres no permite eso con "create or replace".
+drop function if exists admin_listar_accesos();
+
 create or replace function admin_listar_accesos()
 returns table(email text, cliente text, operacion text)
 language sql security definer stable set search_path = public
