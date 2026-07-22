@@ -1015,16 +1015,6 @@
         </div>
       </div>
 
-      <div class="chart-card" style="margin-bottom:14px;">
-        <div class="card-head">
-          <div class="grow">
-            <h4>Distribución del ciclo total por cliente</h4>
-            <p class="sub">Días desde la muestra tomada hasta el informe emitido, por cliente</p>
-          </div>
-        </div>
-        <div class="chart-box" id="chKpiClienteBox"><canvas id="chKpiCliente"></canvas></div>
-      </div>
-
       <div class="chart-card">
         <div class="card-head">
           <div class="grow">
@@ -1037,6 +1027,16 @@
         <div style="overflow:auto;max-height:520px;">
           <table class="dash-tbl grid" id="tblKpiUsuarios"></table>
         </div>
+      </div>
+
+      <div class="chart-card" style="margin-top:14px;">
+        <div class="card-head">
+          <div class="grow">
+            <h4>Distribución del ciclo total por cliente</h4>
+            <p class="sub">Días desde la muestra tomada hasta el informe emitido, por cliente</p>
+          </div>
+        </div>
+        <div class="chart-box" id="chKpiClienteBox"><canvas id="chKpiCliente"></canvas></div>
       </div>
     </div>
   </div>
@@ -4428,28 +4428,42 @@
   // Plugin liviano para mostrar el valor de cada barra -solo en los gráficos
   // que lo pidan explícitamente vía options.plugins.etiquetasValor.enabled, y
   // solo mientras el checkbox "Mostrar etiquetas" esté marcado-.
+  // modo "extremo": barra única, el número va después de la punta de la barra.
+  // modo "centro": barras apiladas -el número va centrado DENTRO de cada
+  // segmento, y se omite si el segmento es demasiado angosto para que entre-,
+  // así los segmentos vecinos no se pisan entre sí.
   if(typeof Chart !== 'undefined') Chart.register({
     id: 'etiquetasValor',
     afterDatasetsDraw(chart){
       const cfg = chart.options.plugins && chart.options.plugins.etiquetasValor;
       if(!cfg || !cfg.enabled || !kpiMostrarEtiquetas) return;
+      const modo = cfg.modo || 'extremo';
       const {ctx} = chart;
+      ctx.save();
+      ctx.font = "10px 'IBM Plex Sans', sans-serif";
+      ctx.textBaseline = 'middle';
       chart.data.datasets.forEach((dataset, di)=>{
         const meta = chart.getDatasetMeta(di);
         if(meta.hidden) return;
         meta.data.forEach((el, i)=>{
           const val = dataset.data[i];
           if(val===null || val===undefined) return;
-          const pos = el.tooltipPosition ? el.tooltipPosition() : el.getCenterPoint();
-          ctx.save();
-          ctx.fillStyle = '#211d17';
-          ctx.font = "10px 'IBM Plex Sans', sans-serif";
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(String(val), pos.x + 5, pos.y);
-          ctx.restore();
+          const texto = String(val);
+          if(modo==='centro'){
+            const base = el.base!==undefined ? el.base : el.x;
+            const anchoPx = Math.abs(el.x - base);
+            if(anchoPx < ctx.measureText(texto).width + 8) return; // no entra: se omite
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.fillText(texto, (el.x+base)/2, el.y);
+          }else{
+            ctx.fillStyle = '#211d17';
+            ctx.textAlign = 'left';
+            ctx.fillText(texto, el.x + 6, el.y);
+          }
         });
       });
+      ctx.restore();
     }
   });
 
@@ -4468,7 +4482,7 @@
       },
       options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
         plugins:{legend:{position:'bottom', labels:{boxWidth:10,boxHeight:10,font:{size:10.5,family:'IBM Plex Sans'}}},
-          etiquetasValor:{enabled:true},
+          etiquetasValor:{enabled:true, modo:'centro'},
           tooltip:{callbacks:{footer:items=>{
             const g=groups[items[0].dataIndex]; return g? 'n = '+g.n+' muestra(s) · ciclo total: '+fmtDays(g.ciclo) : '';
           }}}},
@@ -4487,7 +4501,8 @@
         datasets:[{label:'Días promedio de ciclo total', data:groups.map(g=>Math.round(g.ciclo*10)/10),
           backgroundColor: groups.map(g=>g.ciclo<=7?'#1f9d63':g.ciclo<=14?'#e2a323':'#d13f3f'), borderRadius:3}] },
       options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
-        plugins:{legend:{display:false}, etiquetasValor:{enabled:true},
+        layout:{padding:{right:34}},
+        plugins:{legend:{display:false}, etiquetasValor:{enabled:true, modo:'extremo'},
           tooltip:{callbacks:{afterLabel:c=>{ const g=groups[c.dataIndex]; return g?'n = '+g.n+' muestra(s)':''; }}}},
         scales:{ x:{beginAtZero:true, title:{display:true,text:'Días promedio',font:{size:11}}, grid:{color:'#eef1f4'}},
                  y:{ticks:{font:{size:10}}, grid:{display:false}} } }
