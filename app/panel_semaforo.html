@@ -3323,6 +3323,7 @@
     {key:'tipoEquipo', label:'Tipo de equipo',        w:120, text:c=>c.tipoEquipo},
     {key:'producto',   label:'Producto lubricante',   w:180, text:c=>c.producto},
     {key:'fechaMuestreo', label:'Fecha de muestreo',  w:130, mono:true, text:c=>fmtDate(c.ult.fecha), sortVal:c=>c.ult.fecha?c.ult.fecha.getTime():0},
+    {key:'fechaInformeComp', label:'Fecha de informe', w:130, mono:true, text:c=>fmtDate(c.ult.fechaInforme), sortVal:c=>c.ult.fechaInforme?c.ult.fechaInforme.getTime():0},
     {key:'ultimoComentario', label:'Último comentario', w:280,
       text:c=>(c.ult.status==='alerta'||c.ult.status==='precaucion') ? (depurarComentario(c.ult.comentarioReporte) || '—') : 'Condición aparentemente normal'},
     {key:'comentarioRepDepurado', label:'Comentario reporte depurado', w:280,
@@ -3636,6 +3637,7 @@
   // Banda configurable vía el botón "Columnas"
   const CRIT_CONFIG_FIELDS = [
     {key:'fecha',      label:'Fecha de muestreo',       w:110, mono:true, text:d=>fmtDate(d.fecha), sortVal:d=>d.fecha?d.fecha.getTime():-Infinity},
+    {key:'fechaInformeCrit', label:'Fecha de informe',   w:110, mono:true, text:d=>fmtDate(d.fechaInforme), sortVal:d=>d.fechaInforme?d.fechaInforme.getTime():-Infinity},
     {key:'muestra',    label:'N° muestra',              w:110, mono:true, text:d=>d.muestra},
     {key:'cliente',    label:'Cliente',                 w:170, text:d=>d.cliente},
     {key:'operacion',  label:'Operación',               w:150, text:d=>d.operacion},
