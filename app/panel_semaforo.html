@@ -3258,7 +3258,9 @@
     {key:'operacion',  label:'Operación',             w:150, text:c=>c.ult.operacion},
     {key:'tipoEquipo', label:'Tipo de equipo',        w:120, text:c=>c.tipoEquipo},
     {key:'producto',   label:'Producto lubricante',   w:180, text:c=>c.producto},
-    {key:'fechaMuestreo', label:'Fecha de muestreo',  w:130, mono:true, text:c=>fmtDate(c.ult.fecha), sortVal:c=>c.ult.fecha?c.ult.fecha.getTime():0}
+    {key:'fechaMuestreo', label:'Fecha de muestreo',  w:130, mono:true, text:c=>fmtDate(c.ult.fecha), sortVal:c=>c.ult.fecha?c.ult.fecha.getTime():0},
+    {key:'ultimoComentario', label:'Último comentario', w:280,
+      text:c=>(c.ult.status==='alerta'||c.ult.status==='precaucion') ? (c.ult.comentarioReporte || '—') : 'Condición aparentemente normal'}
   ];
   const COMP_CFG_KEY = 'dashCompCols_v1';
   let compColCfg = null;
@@ -3272,7 +3274,14 @@
       if(s && Array.isArray(s.order) && s.visible){
         const known=new Set(COMP_CONFIG_FIELDS.map(c=>c.key));
         const order=s.order.filter(k=>known.has(k));
-        COMP_CONFIG_FIELDS.forEach(c=>{ if(!order.includes(c.key)) order.push(c.key); });
+        // columnas nuevas que se agreguen más adelante (como esta) deben
+        // aparecer visibles por defecto, incluso para vistas ya guardadas
+        COMP_CONFIG_FIELDS.forEach(c=>{
+          if(!order.includes(c.key)){
+            order.push(c.key);
+            if(!(c.key in s.visible)) s.visible[c.key] = true;
+          }
+        });
         return {order, visible:s.visible};
       }
     }catch(e){}
