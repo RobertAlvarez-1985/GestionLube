@@ -2571,6 +2571,47 @@
   const cleanParam = p => p.replace(/ - \d+$/,'').replace(/^\*+\s*/,'').trim();
   const dias = (a,b) => Math.round((b-a)/86400000);
 
+  // Limpieza SOLO visual/exportable de comentarios que vienen repetidos desde
+  // el archivo de origen (no modifica el dato original en ningún lado).
+  const normOracion = s => s.trim().toLowerCase().replace(/\s+/g,' ');
+  function dividirEnOraciones(texto){
+    const t = String(texto).replace(/\s+/g,' ').trim();
+    if(!t) return [];
+    return (t.match(/[^.!?]+[.!?]*/g) || [t]).map(p=>p.trim()).filter(Boolean);
+  }
+  function depurarComentario(texto){
+    if(!texto) return '';
+    let oraciones = dividirEnOraciones(texto);
+    if(oraciones.length <= 1) return String(texto).trim();
+
+    // 1) si todo el comentario es un bloque de N oraciones repetido k veces
+    // seguidas, se deja solo una copia del bloque
+    const n = oraciones.length;
+    for(let periodo=1; periodo<=Math.floor(n/2); periodo++){
+      if(n % periodo !== 0) continue;
+      const reps = n/periodo;
+      if(reps < 2) continue;
+      let ok = true;
+      for(let r=1; r<reps && ok; r++){
+        for(let i=0; i<periodo; i++){
+          if(normOracion(oraciones[i]) !== normOracion(oraciones[r*periodo+i])){ ok=false; break; }
+        }
+      }
+      if(ok){ oraciones = oraciones.slice(0,periodo); break; }
+    }
+
+    // 2) pasada extra: por si queda alguna oración consecutiva idéntica suelta
+    const limpio = [];
+    let anterior = null;
+    oraciones.forEach(o=>{
+      const norm = normOracion(o);
+      if(norm === anterior) return;
+      limpio.push(o);
+      anterior = norm;
+    });
+    return limpio.join(' ').trim();
+  }
+
   // Agrupa el dataset filtrado por componente (equipo + componente)
   function porComponente(D){
     const map=new Map();
@@ -3260,7 +3301,7 @@
     {key:'producto',   label:'Producto lubricante',   w:180, text:c=>c.producto},
     {key:'fechaMuestreo', label:'Fecha de muestreo',  w:130, mono:true, text:c=>fmtDate(c.ult.fecha), sortVal:c=>c.ult.fecha?c.ult.fecha.getTime():0},
     {key:'ultimoComentario', label:'Último comentario', w:280,
-      text:c=>(c.ult.status==='alerta'||c.ult.status==='precaucion') ? (c.ult.comentarioReporte || '—') : 'Condición aparentemente normal'}
+      text:c=>(c.ult.status==='alerta'||c.ult.status==='precaucion') ? (depurarComentario(c.ult.comentarioReporte) || '—') : 'Condición aparentemente normal'}
   ];
   const COMP_CFG_KEY = 'dashCompCols_v1';
   let compColCfg = null;
@@ -3571,7 +3612,8 @@
     {key:'parametros', label:'Parámetro en alerta o precaución', w:340,
       text:d=>d.flags.map(f=>cleanParam(f.param)+(f.val!==''&&f.val!=null?': '+f.val:'')+' ('+(f.st==='alerta'?'Alerta':'Precaución')+')').join(' | '),
       html:d=>d.flags.map(f=>`<span class="${f.st==='alerta'?'pill-r':'pill-y'}">${esc(cleanParam(f.param))}${f.val!==''&&f.val!=null?': '+esc(f.val):''}</span>`).join(' ') || '—'},
-    {key:'comentarioRep', label:'Comentario del reporte', w:320, text:d=>d.comentarioReporte}
+    {key:'comentarioRep', label:'Comentario del reporte', w:320, text:d=>d.comentarioReporte},
+    {key:'comentarioRepDepurado', label:'Comentario reporte depurado', w:320, text:d=>depurarComentario(d.comentarioReporte)}
   ];
   const CRIT_CFG_KEY='dashCritCols_v6';
   let critColCfg = null;
@@ -3585,7 +3627,12 @@
       if(s && Array.isArray(s.order) && s.visible){
         const known=new Set(CRIT_CONFIG_FIELDS.map(c=>c.key));
         const order=s.order.filter(k=>known.has(k));
-        CRIT_CONFIG_FIELDS.forEach(c=>{ if(!order.includes(c.key)) order.push(c.key); });
+        CRIT_CONFIG_FIELDS.forEach(c=>{
+          if(!order.includes(c.key)){
+            order.push(c.key);
+            if(!(c.key in s.visible)) s.visible[c.key] = true;
+          }
+        });
         return {order, visible:s.visible};
       }
     }catch(e){}
