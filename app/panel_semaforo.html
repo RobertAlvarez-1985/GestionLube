@@ -734,11 +734,11 @@
           <select id="fTipoEquipo"><option value="">Todos</option></select>
         </div>
         <div>
-          <label>Desde (muestreo)</label>
+          <label>Desde (informe)</label>
           <input type="date" id="fDesde">
         </div>
         <div>
-          <label>Hasta (muestreo)</label>
+          <label>Hasta (informe)</label>
           <input type="date" id="fHasta">
         </div>
         <div>
@@ -977,11 +977,11 @@
           <select id="kpifUsuario" multiple></select>
         </div>
         <div class="fld">
-          <label>Desde</label>
+          <label>Desde (informe)</label>
           <input type="date" id="kpifDesde">
         </div>
         <div class="fld">
-          <label>Hasta</label>
+          <label>Hasta (informe)</label>
           <input type="date" id="kpifHasta">
         </div>
         <label class="chk-lbl" style="align-self:center;">
@@ -1180,11 +1180,11 @@
           <select id="anfDescriptor" multiple></select>
         </div>
         <div class="fld">
-          <label>Desde</label>
+          <label>Desde (informe)</label>
           <input type="date" id="anfDesde">
         </div>
         <div class="fld">
-          <label>Hasta</label>
+          <label>Hasta (informe)</label>
           <input type="date" id="anfHasta">
         </div>
         <div class="hint2">Cada filtro solo ofrece los valores relacionados con lo ya seleccionado en los demás. Ctrl/Cmd+clic para elegir varios.</div>
@@ -2948,8 +2948,8 @@
       if(o && d.operacion!==o) return false;
       if(t && d.tipoEquipo!==t) return false;
       if(p && d.producto!==p) return false;
-      if(d1 && (!d.fecha || d.fecha<d1)) return false;
-      if(d2 && (!d.fecha || d.fecha>d2)) return false;
+      if(d1 && (!d.fechaInforme || d.fechaInforme<d1)) return false;
+      if(d2 && (!d.fechaInforme || d.fechaInforme>d2)) return false;
       return true;
     });
   }
@@ -4345,8 +4345,8 @@
       if(kpiFilters.clientes.size && !kpiFilters.clientes.has(d.cliente)) return false;
       if(kpiFilters.operaciones.size && !kpiFilters.operaciones.has(d.operacion||'(Sin operación)')) return false;
       if(kpiFilters.usuarios.size && !kpiFilters.usuarios.has(d.usuario||'(Sin usuario)')) return false;
-      if(d1 && (!d.fecha || d.fecha<d1)) return false;
-      if(d2 && (!d.fecha || d.fecha>d2)) return false;
+      if(d1 && (!d.fechaInforme || d.fechaInforme<d1)) return false;
+      if(d2 && (!d.fechaInforme || d.fechaInforme>d2)) return false;
       return true;
     });
   }
@@ -4632,8 +4632,8 @@
         const set=anFilters[fd.key];
         if(set.size && !set.has(d[fd.field])) return false;
       }
-      if(d1 && (!d.fecha || d.fecha<d1)) return false;
-      if(d2 && (!d.fecha || d.fecha>d2)) return false;
+      if(d1 && (!d.fechaInforme || d.fechaInforme<d1)) return false;
+      if(d2 && (!d.fechaInforme || d.fechaInforme>d2)) return false;
       return true;
     });
   }
