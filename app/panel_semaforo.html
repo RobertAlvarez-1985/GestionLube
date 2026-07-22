@@ -3311,8 +3311,15 @@
     {key:'producto',   label:'Producto lubricante',   w:180, text:c=>c.producto},
     {key:'fechaMuestreo', label:'Fecha de muestreo',  w:130, mono:true, text:c=>fmtDate(c.ult.fecha), sortVal:c=>c.ult.fecha?c.ult.fecha.getTime():0},
     {key:'ultimoComentario', label:'Último comentario', w:280,
-      text:c=>(c.ult.status==='alerta'||c.ult.status==='precaucion') ? (depurarComentario(c.ult.comentarioReporte) || '—') : 'Condición aparentemente normal'}
+      text:c=>(c.ult.status==='alerta'||c.ult.status==='precaucion') ? (depurarComentario(c.ult.comentarioReporte) || '—') : 'Condición aparentemente normal'},
+    {key:'comentarioRepDepurado', label:'Comentario reporte depurado', w:280,
+      text:c=>depurarComentario(c.ult.comentarioReporte)}
   ];
+  // Estas dos columnas siguen siendo configurables (se pueden ocultar desde
+  // "Columnas"), pero su posición en la tabla queda fija: "Último comentario"
+  // justo después de "# Precauciones", y "Comentario reporte depurado" como
+  // última columna de todas.
+  const COMP_COLS_AL_FINAL = ['ultimoComentario','comentarioRepDepurado'];
   const COMP_CFG_KEY = 'dashCompCols_v1';
   let compColCfg = null;
   function defaultCompColCfg(){
@@ -3382,7 +3389,12 @@
   function renderTablaComponentes(D){
     const rows=calcComponentes(D);
     if(!compColCfg) compColCfg=loadCompColCfg();
-    gridComp.setCols([...COMP_PINNED_LEFT, ...compVisibleConfigCols(), ...COMP_PINNED_RIGHT]);
+    const visibles = compVisibleConfigCols();
+    const normales = visibles.filter(c=>!COMP_COLS_AL_FINAL.includes(c.key));
+    // se agregan en el orden fijo de COMP_COLS_AL_FINAL, no en el orden que
+    // tengan dentro del panel "Columnas"
+    const alFinal = COMP_COLS_AL_FINAL.map(k=>visibles.find(c=>c.key===k)).filter(Boolean);
+    gridComp.setCols([...COMP_PINNED_LEFT, ...normales, ...COMP_PINNED_RIGHT, ...alFinal]);
     gridComp.setRows(rows);
     gridComp.setRowClick(openCompDrawer);
     const vis=gridComp.render();
