@@ -473,6 +473,9 @@
   .an-filters select[multiple]{border:1px solid var(--border);border-radius:8px;padding:5px;font-size:12px;font-family:inherit;background:#fff;min-width:150px;height:76px;}
   .an-filters input[type=date]{border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12.5px;font-family:inherit;}
   .an-filters .hint2{font-size:10px;color:var(--ink-faint);max-width:150px;line-height:1.4;}
+  .msel-actions{display:flex;gap:8px;}
+  .msel-actions button{border:none;background:none;padding:0;font-size:10px;color:var(--accent-dark);font-weight:700;cursor:pointer;text-decoration:underline;}
+  .msel-actions button:hover{color:var(--accent);}
   .an-count{margin-left:auto;font-size:12.5px;color:var(--ink-soft);align-self:center;}
   .an-count b{color:var(--accent-dark);}
 
@@ -960,10 +963,17 @@
       <div class="an-filters">
         <div class="fld">
           <label>Cliente(s)</label>
+          <div class="msel-actions"><button type="button" data-msel="kpifCliente" data-act="all">Todos</button><button type="button" data-msel="kpifCliente" data-act="none">Ninguno</button></div>
           <select id="kpifCliente" multiple></select>
         </div>
         <div class="fld">
+          <label>Operación(es)</label>
+          <div class="msel-actions"><button type="button" data-msel="kpifOperacion" data-act="all">Todas</button><button type="button" data-msel="kpifOperacion" data-act="none">Ninguna</button></div>
+          <select id="kpifOperacion" multiple></select>
+        </div>
+        <div class="fld">
           <label>Usuario(s)</label>
+          <div class="msel-actions"><button type="button" data-msel="kpifUsuario" data-act="all">Todos</button><button type="button" data-msel="kpifUsuario" data-act="none">Ninguno</button></div>
           <select id="kpifUsuario" multiple></select>
         </div>
         <div class="fld">
@@ -974,7 +984,10 @@
           <label>Hasta</label>
           <input type="date" id="kpifHasta">
         </div>
-        <div class="hint2">Los tiempos se calculan solo entre las fechas que estén presentes en cada muestra.</div>
+        <label class="chk-lbl" style="align-self:center;">
+          <input type="checkbox" id="kpifEtiquetas"> Mostrar etiquetas en las gráficas
+        </label>
+        <div class="hint2">Los tiempos se calculan solo entre las fechas que estén presentes en cada muestra. La lista de usuarios se ajusta según el/los cliente(s) y operación(es) elegidos.</div>
         <button class="btn btn-ghost" id="btnKpiFClear">Limpiar filtros</button>
         <span class="an-count" id="kpiCount"></span>
       </div>
@@ -4322,13 +4335,15 @@
   }
   function cicloTotal(d){ return diffDaysSafe(d.fecha, d.fechaInforme); }
 
-  const kpiFilters = {clientes:new Set(), usuarios:new Set(), desde:null, hasta:null};
+  const kpiFilters = {clientes:new Set(), operaciones:new Set(), usuarios:new Set(), desde:null, hasta:null};
+  let kpiMostrarEtiquetas = false;
 
   function kpiData(){
     const d1 = kpiFilters.desde ? new Date(kpiFilters.desde+'T00:00:00') : null;
     const d2 = kpiFilters.hasta ? new Date(kpiFilters.hasta+'T23:59:59') : null;
     return dataset.filter(d=>{
       if(kpiFilters.clientes.size && !kpiFilters.clientes.has(d.cliente)) return false;
+      if(kpiFilters.operaciones.size && !kpiFilters.operaciones.has(d.operacion||'(Sin operación)')) return false;
       if(kpiFilters.usuarios.size && !kpiFilters.usuarios.has(d.usuario||'(Sin usuario)')) return false;
       if(d1 && (!d.fecha || d.fecha<d1)) return false;
       if(d2 && (!d.fecha || d.fecha>d2)) return false;
@@ -4336,14 +4351,22 @@
     });
   }
 
+  // Cliente -> Operación -> Usuario en cascada: cada select solo ofrece las
+  // opciones compatibles con lo ya elegido en los anteriores (igual idea que
+  // el cascadeo de filtros del Dashboard).
+  function kpiFillMulti(id, vals, cur){
+    const sel=$(id);
+    const opts=[...new Set(vals)].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
+    sel.innerHTML = opts.map(v=>`<option value="${esc(v)}" ${cur.has(v)?'selected':''}>${esc(v)}</option>`).join('');
+  }
   function kpiBuildFilterOptions(){
-    const fill=(id, vals, label)=>{
-      const sel=$(id), cur=new Set([...sel.selectedOptions].map(o=>o.value));
-      const opts=[...new Set(vals)].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
-      sel.innerHTML = opts.map(v=>`<option value="${esc(v)}" ${cur.has(v)?'selected':''}>${esc(v)}</option>`).join('');
-    };
-    fill('kpifCliente', dataset.map(d=>d.cliente), 'Cliente');
-    fill('kpifUsuario', dataset.map(d=>d.usuario||'(Sin usuario)'), 'Usuario');
+    kpiFillMulti('kpifCliente', dataset.map(d=>d.cliente), kpiFilters.clientes);
+
+    const base1 = dataset.filter(d=> !kpiFilters.clientes.size || kpiFilters.clientes.has(d.cliente));
+    kpiFillMulti('kpifOperacion', base1.map(d=>d.operacion||'(Sin operación)'), kpiFilters.operaciones);
+
+    const base2 = base1.filter(d=> !kpiFilters.operaciones.size || kpiFilters.operaciones.has(d.operacion||'(Sin operación)'));
+    kpiFillMulti('kpifUsuario', base2.map(d=>d.usuario||'(Sin usuario)'), kpiFilters.usuarios);
   }
 
   function avg(vals){ const c=vals.filter(v=>v!=null); return c.length? c.reduce((a,b)=>a+b,0)/c.length : null; }
@@ -4402,6 +4425,34 @@
   const kpiCharts = {};
   function destroyKpiChart(k){ if(kpiCharts[k]){ kpiCharts[k].destroy(); delete kpiCharts[k]; } }
 
+  // Plugin liviano para mostrar el valor de cada barra -solo en los gráficos
+  // que lo pidan explícitamente vía options.plugins.etiquetasValor.enabled, y
+  // solo mientras el checkbox "Mostrar etiquetas" esté marcado-.
+  if(typeof Chart !== 'undefined') Chart.register({
+    id: 'etiquetasValor',
+    afterDatasetsDraw(chart){
+      const cfg = chart.options.plugins && chart.options.plugins.etiquetasValor;
+      if(!cfg || !cfg.enabled || !kpiMostrarEtiquetas) return;
+      const {ctx} = chart;
+      chart.data.datasets.forEach((dataset, di)=>{
+        const meta = chart.getDatasetMeta(di);
+        if(meta.hidden) return;
+        meta.data.forEach((el, i)=>{
+          const val = dataset.data[i];
+          if(val===null || val===undefined) return;
+          const pos = el.tooltipPosition ? el.tooltipPosition() : el.getCenterPoint();
+          ctx.save();
+          ctx.fillStyle = '#211d17';
+          ctx.font = "10px 'IBM Plex Sans', sans-serif";
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(val), pos.x + 5, pos.y);
+          ctx.restore();
+        });
+      });
+    }
+  });
+
   // Comparativo de usuarios por etapa (barras apiladas), limitado a los clientes filtrados o top usuarios por volumen
   function kpiRenderUsuariosChart(D){
     const groups = kpiGroupByUsuario(D).filter(g=>g.n>=1).sort((a,b)=>b.n-a.n).slice(0,15);
@@ -4417,6 +4468,7 @@
       },
       options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
         plugins:{legend:{position:'bottom', labels:{boxWidth:10,boxHeight:10,font:{size:10.5,family:'IBM Plex Sans'}}},
+          etiquetasValor:{enabled:true},
           tooltip:{callbacks:{footer:items=>{
             const g=groups[items[0].dataIndex]; return g? 'n = '+g.n+' muestra(s) · ciclo total: '+fmtDays(g.ciclo) : '';
           }}}},
@@ -4435,7 +4487,8 @@
         datasets:[{label:'Días promedio de ciclo total', data:groups.map(g=>Math.round(g.ciclo*10)/10),
           backgroundColor: groups.map(g=>g.ciclo<=7?'#1f9d63':g.ciclo<=14?'#e2a323':'#d13f3f'), borderRadius:3}] },
       options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
-        plugins:{legend:{display:false}, tooltip:{callbacks:{afterLabel:c=>{ const g=groups[c.dataIndex]; return g?'n = '+g.n+' muestra(s)':''; }}}},
+        plugins:{legend:{display:false}, etiquetasValor:{enabled:true},
+          tooltip:{callbacks:{afterLabel:c=>{ const g=groups[c.dataIndex]; return g?'n = '+g.n+' muestra(s)':''; }}}},
         scales:{ x:{beginAtZero:true, title:{display:true,text:'Días promedio',font:{size:11}}, grid:{color:'#eef1f4'}},
                  y:{ticks:{font:{size:10}}, grid:{display:false}} } }
     });
@@ -5481,19 +5534,49 @@
   });
 
   // KPIs de Gestión
-  ['kpifCliente','kpifUsuario'].forEach(id=>$(id).addEventListener('change', ()=>{
+  $('kpifCliente').addEventListener('change', ()=>{
     kpiFilters.clientes = new Set([...$('kpifCliente').selectedOptions].map(o=>o.value));
+    // al cambiar el cliente, Operación y Usuario se recalculan en cascada
+    // (kpiBuildFilterOptions descarta las selecciones que ya no apliquen)
+    kpiFilters.operaciones = new Set([...$('kpifOperacion').selectedOptions].map(o=>o.value));
+    kpiFilters.usuarios = new Set([...$('kpifUsuario').selectedOptions].map(o=>o.value));
+    kpiBuildFilterOptions();
+    kpiFilters.operaciones = new Set([...$('kpifOperacion').selectedOptions].map(o=>o.value));
     kpiFilters.usuarios = new Set([...$('kpifUsuario').selectedOptions].map(o=>o.value));
     kpiRenderAll();
-  }));
+  });
+  $('kpifOperacion').addEventListener('change', ()=>{
+    kpiFilters.operaciones = new Set([...$('kpifOperacion').selectedOptions].map(o=>o.value));
+    kpiFilters.usuarios = new Set([...$('kpifUsuario').selectedOptions].map(o=>o.value));
+    kpiBuildFilterOptions();
+    kpiFilters.usuarios = new Set([...$('kpifUsuario').selectedOptions].map(o=>o.value));
+    kpiRenderAll();
+  });
+  $('kpifUsuario').addEventListener('change', ()=>{
+    kpiFilters.usuarios = new Set([...$('kpifUsuario').selectedOptions].map(o=>o.value));
+    kpiRenderAll();
+  });
   ['kpifDesde','kpifHasta'].forEach(id=>$(id).addEventListener('change', ()=>{
     kpiFilters.desde=$('kpifDesde').value; kpiFilters.hasta=$('kpifHasta').value;
     kpiRenderAll();
   }));
+  $('kpifEtiquetas').addEventListener('change', e=>{
+    kpiMostrarEtiquetas = e.target.checked;
+    kpiRenderAll();
+  });
+  document.querySelectorAll('.msel-actions [data-msel]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const sel = $(btn.dataset.msel);
+      [...sel.options].forEach(o=>{ o.selected = btn.dataset.act==='all'; });
+      sel.dispatchEvent(new Event('change'));
+    });
+  });
   $('btnKpiFClear').addEventListener('click', ()=>{
-    kpiFilters.clientes=new Set(); kpiFilters.usuarios=new Set(); kpiFilters.desde=null; kpiFilters.hasta=null;
-    ['kpifCliente','kpifUsuario'].forEach(id=>{ [...$(id).options].forEach(o=>o.selected=false); });
+    kpiFilters.clientes=new Set(); kpiFilters.operaciones=new Set(); kpiFilters.usuarios=new Set();
+    kpiFilters.desde=null; kpiFilters.hasta=null;
+    ['kpifCliente','kpifOperacion','kpifUsuario'].forEach(id=>{ [...$(id).options].forEach(o=>o.selected=false); });
     $('kpifDesde').value=''; $('kpifHasta').value='';
+    kpiBuildFilterOptions();
     kpiRenderAll();
   });
   $('btnKpiPrint').addEventListener('click', exportKpiExcel);
