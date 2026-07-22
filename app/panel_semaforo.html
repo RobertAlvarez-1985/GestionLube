@@ -2573,47 +2573,51 @@
 
   // Limpieza SOLO visual/exportable de comentarios que vienen repetidos desde
   // el archivo de origen (no modifica el dato original en ningún lado).
-  const normOracion = s => s.trim().toLowerCase().replace(/\s+/g,' ');
+  // Estrategia: partir el comentario en oraciones y descartar cualquiera que
+  // ya haya aparecido antes -sin importar el orden en que se repitan, ni si
+  // el bloque repetido ocupa todo el comentario o solo una parte de él-.
+  const COMENTARIO_STOPWORDS = new Set(['de','del','el','la','los','las','en','con','para','por','a','y','o','u','que','al','un','una','su','sus','es','son','se']);
+  const normOracion = s => s.trim().toLowerCase().replace(/\s+/g,' ').replace(/[.,;:]+$/,'');
   function dividirEnOraciones(texto){
     const t = String(texto).replace(/\s+/g,' ').trim();
     if(!t) return [];
-    return (t.match(/[^.!?]+[.!?]*/g) || [t]).map(p=>p.trim()).filter(Boolean);
+    const partes = (t.match(/[^.!?]+[.!?]*/g) || [t]).map(p=>p.trim()).filter(Boolean);
+    const final = [];
+    partes.forEach(parte=>{
+      // dentro de cada oración, separar también donde falta el punto entre
+      // dos frases de la plantilla (minúscula + espacio + Mayúscula), salvo
+      // que la palabra anterior sea una preposición/artículo corto (de, el,
+      // la...) para no cortar cosas como "Contenido de Aluminio"
+      const palabras = parte.split(' ');
+      let actual = [];
+      palabras.forEach((w,i)=>{
+        if(i>0){
+          const anterior = palabras[i-1].replace(/[.,;:]+$/,'');
+          const esMayusInicial = /^[A-ZÁÉÍÓÚÑ]/.test(w);
+          const anteriorEsMinuscula = /^[a-záéíóúñ]/.test(anterior);
+          const anteriorEsCorta = COMENTARIO_STOPWORDS.has(anterior.toLowerCase()) || anterior.length<=2;
+          if(esMayusInicial && anteriorEsMinuscula && !anteriorEsCorta){
+            final.push(actual.join(' ').trim());
+            actual = [];
+          }
+        }
+        actual.push(w);
+      });
+      if(actual.length) final.push(actual.join(' ').trim());
+    });
+    return final.filter(Boolean);
   }
   function depurarComentario(texto){
     if(!texto) return '';
-    let oraciones = dividirEnOraciones(texto);
+    const oraciones = dividirEnOraciones(texto);
     if(oraciones.length <= 1) return String(texto).trim();
-    const n = oraciones.length;
-
-    // 1) buscar el bloque inicial (una o varias oraciones) que se repite
-    // consecutivamente la mayor cantidad de oraciones posible -sin exigir
-    // que ocupe el comentario completo: puede haber oraciones sueltas y
-    // distintas después del bloque repetido, y quedan tal cual-.
-    let mejorK = 0, mejorR = 1, mejorCobertura = 0;
-    for(let k=1; k<=Math.floor(n/2); k++){
-      let r = 1;
-      while((r+1)*k <= n){
-        let iguales = true;
-        for(let i=0; i<k; i++){
-          if(normOracion(oraciones[r*k+i]) !== normOracion(oraciones[i])){ iguales=false; break; }
-        }
-        if(!iguales) break;
-        r++;
-      }
-      if(r >= 2 && r*k > mejorCobertura){ mejorK = k; mejorR = r; mejorCobertura = r*k; }
-    }
-    if(mejorK > 0){
-      oraciones = oraciones.slice(0, mejorK).concat(oraciones.slice(mejorR*mejorK));
-    }
-
-    // 2) pasada extra: por si queda alguna oración consecutiva idéntica suelta
+    const vistas = new Set();
     const limpio = [];
-    let anterior = null;
     oraciones.forEach(o=>{
       const norm = normOracion(o);
-      if(norm === anterior) return;
+      if(vistas.has(norm)) return;
+      vistas.add(norm);
       limpio.push(o);
-      anterior = norm;
     });
     return limpio.join(' ').trim();
   }
