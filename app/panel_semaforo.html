@@ -291,6 +291,7 @@
   .dash-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:18px;box-shadow:var(--shadow-sm);}
   .dash-filters label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);display:block;margin-bottom:3px;}
   .dash-filters select,.dash-filters input[type=date]{border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12.5px;font-family:inherit;background:#fff;color:var(--ink);min-width:160px;}
+  .dash-filters select[multiple]{height:78px;padding:5px;}
   .grid-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:18px;}
   .chart-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:16px 18px;min-width:0;}
   .chart-card h4{margin:0 0 2px;font-family:'Space Grotesk',sans-serif;font-size:13.5px;}
@@ -723,15 +724,18 @@
       <div class="dash-filters">
         <div>
           <label>Cliente</label>
-          <select id="fCliente"><option value="">Todos</option></select>
+          <div class="msel-actions"><button type="button" data-msel="fCliente" data-act="all">Todos</button><button type="button" data-msel="fCliente" data-act="none">Ninguno</button></div>
+          <select id="fCliente" multiple></select>
         </div>
         <div>
           <label>Operación</label>
-          <select id="fOperacion"><option value="">Todas</option></select>
+          <div class="msel-actions"><button type="button" data-msel="fOperacion" data-act="all">Todas</button><button type="button" data-msel="fOperacion" data-act="none">Ninguna</button></div>
+          <select id="fOperacion" multiple></select>
         </div>
         <div>
           <label>Tipo de equipo</label>
-          <select id="fTipoEquipo"><option value="">Todos</option></select>
+          <div class="msel-actions"><button type="button" data-msel="fTipoEquipo" data-act="all">Todos</button><button type="button" data-msel="fTipoEquipo" data-act="none">Ninguno</button></div>
+          <select id="fTipoEquipo" multiple></select>
         </div>
         <div>
           <label>Desde (informe)</label>
@@ -743,7 +747,8 @@
         </div>
         <div>
           <label>Producto lubricante</label>
-          <select id="fProducto"><option value="">Todos</option></select>
+          <div class="msel-actions"><button type="button" data-msel="fProducto" data-act="all">Todos</button><button type="button" data-msel="fProducto" data-act="none">Ninguno</button></div>
+          <select id="fProducto" multiple></select>
         </div>
         <label class="lbl-toggle" title="Muestra el valor de cada categoría dentro de las barras cuando hay espacio suficiente">
           <input type="checkbox" id="chkLabels"> Etiquetas por categoría
@@ -2916,38 +2921,39 @@
   }
 
   /* ---------- Filtros ---------- */
-  function fillSel(id, vals, label){
-    const sel=$(id), cur=sel.value;
+  function selectedSet(id){ return new Set([...$(id).selectedOptions].map(o=>o.value)); }
+  function fillMultiSel(id, vals){
+    const sel=$(id), cur=selectedSet(id);
     const opts=[...new Set(vals)].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
-    sel.innerHTML='<option value="">'+label+'</option>'+opts.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
-    sel.value = opts.includes(cur) ? cur : '';
+    sel.innerHTML = opts.map(v=>`<option value="${esc(v)}" ${cur.has(v)?'selected':''}>${esc(v)}</option>`).join('');
   }
   function buildFilterOptions(){
-    fillSel('fCliente', dataset.map(d=>d.cliente), 'Todos');
+    fillMultiSel('fCliente', dataset.map(d=>d.cliente));
     refreshCascade();
   }
   // Cada filtro solo ofrece los valores compatibles con las selecciones anteriores
+  // (vacío = "todos", igual que el resto de los filtros multi-selección de la app)
   function refreshCascade(){
-    const c=$('fCliente').value;
-    const s1=dataset.filter(d=>!c || d.cliente===c);
-    fillSel('fOperacion', s1.map(d=>d.operacion), 'Todas');
-    const o=$('fOperacion').value;
-    const s2=s1.filter(d=>!o || d.operacion===o);
-    fillSel('fTipoEquipo', s2.map(d=>d.tipoEquipo), 'Todos');
-    const t=$('fTipoEquipo').value;
-    const s3=s2.filter(d=>!t || d.tipoEquipo===t);
-    fillSel('fProducto', s3.map(d=>d.producto), 'Todos');
+    const c=selectedSet('fCliente');
+    const s1=dataset.filter(d=>!c.size || c.has(d.cliente));
+    fillMultiSel('fOperacion', s1.map(d=>d.operacion));
+    const o=selectedSet('fOperacion');
+    const s2=s1.filter(d=>!o.size || o.has(d.operacion));
+    fillMultiSel('fTipoEquipo', s2.map(d=>d.tipoEquipo));
+    const t=selectedSet('fTipoEquipo');
+    const s3=s2.filter(d=>!t.size || t.has(d.tipoEquipo));
+    fillMultiSel('fProducto', s3.map(d=>d.producto));
   }
 
   function filtered(){
-    const c=$('fCliente').value, o=$('fOperacion').value, t=$('fTipoEquipo').value, p=$('fProducto').value;
+    const c=selectedSet('fCliente'), o=selectedSet('fOperacion'), t=selectedSet('fTipoEquipo'), p=selectedSet('fProducto');
     const d1=$('fDesde').value ? new Date($('fDesde').value+'T00:00:00') : null;
     const d2=$('fHasta').value ? new Date($('fHasta').value+'T23:59:59') : null;
     return dataset.filter(d=>{
-      if(c && d.cliente!==c) return false;
-      if(o && d.operacion!==o) return false;
-      if(t && d.tipoEquipo!==t) return false;
-      if(p && d.producto!==p) return false;
+      if(c.size && !c.has(d.cliente)) return false;
+      if(o.size && !o.has(d.operacion)) return false;
+      if(t.size && !t.has(d.tipoEquipo)) return false;
+      if(p.size && !p.has(d.producto)) return false;
       if(d1 && (!d.fechaInforme || d.fechaInforme<d1)) return false;
       if(d2 && (!d.fechaInforme || d.fechaInforme>d2)) return false;
       return true;
@@ -4194,7 +4200,8 @@
   ['fCliente','fOperacion','fTipoEquipo'].forEach(id=>$(id).addEventListener('change', ()=>{ refreshCascade(); render(); }));
   ['fProducto','fDesde','fHasta'].forEach(id=>$(id).addEventListener('change', render));
   $('btnDashReset').addEventListener('click', ()=>{
-    ['fCliente','fOperacion','fTipoEquipo','fProducto','fDesde','fHasta'].forEach(id=>$(id).value='');
+    ['fCliente','fOperacion','fTipoEquipo','fProducto'].forEach(id=>{ [...$(id).options].forEach(o=>o.selected=false); });
+    $('fDesde').value=''; $('fHasta').value='';
     refreshCascade(); render();
   });
   $('chkLabels').addEventListener('change', e=>{ showLabels=e.target.checked; render(); });
