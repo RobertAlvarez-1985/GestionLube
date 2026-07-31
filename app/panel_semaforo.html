@@ -580,6 +580,10 @@
       <span class="nav-ico">🕘</span>
       <span class="nav-txt"><strong>Historial</strong><small>Reporte por equipo / componente</small></span>
     </button>
+    <button class="nav-item" data-view="historialrapido">
+      <span class="nav-ico">📋</span>
+      <span class="nav-txt"><strong>Historial Rápido</strong><small>Tabla filtrable con todos los parámetros</small></span>
+    </button>
     <button class="nav-item" data-view="analytic">
       <span class="nav-ico">📈</span>
       <span class="nav-txt"><strong>Analytic</strong><small>Exploración estadística avanzada</small></span>
@@ -1133,7 +1137,76 @@
       <div id="repContent"></div>
     </div>
 
-  
+
+  </div>
+</section>
+
+<!-- ============================ VISTA: HISTORIAL RÁPIDO ============================ -->
+<section class="view" id="view-historialrapido">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="lamp-mark" style="background:#1d3444;"><span class="g on"></span><span class="y"></span><span class="r"></span></div>
+        <div class="brand-text">
+          <h1 class="display">Historial Rápido</h1>
+          <p>Todas las muestras filtradas, con cada parámetro de laboratorio en su propia columna</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-wrap">
+    <div id="hrEmpty" class="dash-empty">
+      <h3 class="display">Aún no hay datos cargados</h3>
+      <p>Ve a la pestaña <b>Dashboard</b> y selecciona la carpeta con los reportes exportados.</p>
+    </div>
+
+    <div id="hrBody" style="display:none;">
+      <div class="an-filters">
+        <div class="fld">
+          <label>Cliente(s)</label>
+          <div class="msel-actions"><button type="button" data-msel="hrfCliente" data-act="all">Todos</button><button type="button" data-msel="hrfCliente" data-act="none">Ninguno</button></div>
+          <select id="hrfCliente" multiple></select>
+        </div>
+        <div class="fld">
+          <label>Equipo(s)</label>
+          <div class="msel-actions"><button type="button" data-msel="hrfEquipo" data-act="all">Todos</button><button type="button" data-msel="hrfEquipo" data-act="none">Ninguno</button></div>
+          <select id="hrfEquipo" multiple></select>
+        </div>
+        <div class="fld">
+          <label>Componente(s)</label>
+          <div class="msel-actions"><button type="button" data-msel="hrfComponente" data-act="all">Todos</button><button type="button" data-msel="hrfComponente" data-act="none">Ninguno</button></div>
+          <select id="hrfComponente" multiple></select>
+        </div>
+        <div class="fld">
+          <label>Descriptor de componente(s)</label>
+          <div class="msel-actions"><button type="button" data-msel="hrfDescriptor" data-act="all">Todos</button><button type="button" data-msel="hrfDescriptor" data-act="none">Ninguno</button></div>
+          <select id="hrfDescriptor" multiple></select>
+        </div>
+        <div class="hint2">Cada filtro solo ofrece los valores relacionados con lo ya seleccionado en los demás. Las columnas de parámetros de laboratorio se arman solas según lo que haya en las muestras filtradas.</div>
+        <button class="btn btn-ghost" id="btnHrClear">Limpiar filtros</button>
+        <span class="an-count" id="hrCount"></span>
+      </div>
+
+      <div class="chart-card">
+        <div class="card-head">
+          <div class="grow">
+            <h4>Muestras filtradas</h4>
+            <p class="sub">Clic en el encabezado para ordenar · ⌄ para filtrar por lista de valores · agrupado por cliente/equipo/componente y ordenado por fecha</p>
+          </div>
+          <button class="btn print-btn" id="btnHrPrint" title="Exportar a Excel"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+        </div>
+        <div class="grid-toolbar">
+          <div class="search-box">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="hrSearch" placeholder="Buscar en la tabla…">
+          </div>
+        </div>
+        <div style="overflow:auto;max-height:calc(100vh - 340px);min-height:320px;">
+          <table class="dash-tbl grid" id="tblHistorialRapido"></table>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -2695,6 +2768,7 @@
   const gridKpi  = createGrid('tblKpiUsuarios', 'dashGridKpi_v1');
   const gridEnv  = createGrid('tblEnvejecimiento', 'dashGridEnv_v1');
   const gridFreq = createGrid('tblFrecuencia',   'dashGridFreq_v1');
+  const gridHR   = createGrid('tblHistorialRapido', 'dashGridHR_v1');
 
   function parseDate(v){
     if(v===""||v==null) return null;
@@ -2819,6 +2893,7 @@
     refreshHistorial();
     anRefresh();
     refreshKpiGestion();
+    refreshHistorialRapido();
   }
 
   // Lista desplegable de archivos con checkbox para incluir/excluir del consolidado
@@ -3474,7 +3549,7 @@
   // Salta a la pestaña Historial y abre el informe completo del componente indicado
   let reportBackTarget = null;   // null = volver al listado de Historial; si no, id de vista (ej. 'dashboard')
   let reportBackScroll = 0;
-  const HIST_BACK_LABELS = {dashboard:'Dashboard', analytic:'Analytic', semaforo:'Plantilla Semáforo', kpigestion:'KPIs Gestión'};
+  const HIST_BACK_LABELS = {dashboard:'Dashboard', analytic:'Analytic', semaforo:'Plantilla Semáforo', kpigestion:'KPIs Gestión', historialrapido:'Historial Rápido'};
   function updateHistBackLabel(){
     const btn=$('btnHistBack');
     btn.textContent = (reportBackTarget && HIST_BACK_LABELS[reportBackTarget])
@@ -3737,6 +3812,139 @@
       title:'Reporte de Novedades por componente',
       subtitle:(critEstado==='ambas'?'Alerta y precaución':critEstado==='alerta'?'Alerta':'Precaución')+' · Muestras con novedad · generado '+fmtDate(new Date()),
       sheet:'Muestras', filename:'Reporte_Novedades_Muestras'
+    });
+  }
+
+  /* ==================== HISTORIAL RÁPIDO ====================
+     Una fila por muestra (todo el histórico filtrado), con una columna
+     por cada parámetro de laboratorio presente en las muestras filtradas
+     -se arman solas, no hay lista fija-, más dos columnas de resumen del
+     comentario. Filtros de Cliente/Equipo/Componente/Descriptor con
+     jerarquía mutua (igual mecanismo que Analytic): cada uno solo ofrece
+     los valores compatibles con lo ya elegido en los demás. */
+  const HR_FILTER_DEFS = [
+    {key:'clientes',     field:'cliente',              selId:'hrfCliente'},
+    {key:'equipos',      field:'equipo',                selId:'hrfEquipo'},
+    {key:'componentes',  field:'componente',            selId:'hrfComponente'},
+    {key:'descriptores', field:'descriptorComponente',  selId:'hrfDescriptor'}
+  ];
+  const hrFilters = {clientes:new Set(), equipos:new Set(), componentes:new Set(), descriptores:new Set()};
+
+  function hrApplyFiltersExcept(exceptKey){
+    return dataset.filter(d=>{
+      for(const fd of HR_FILTER_DEFS){
+        if(fd.key===exceptKey) continue;
+        const set = hrFilters[fd.key];
+        if(set.size && !set.has(d[fd.field])) return false;
+      }
+      return true;
+    });
+  }
+  function hrRefreshFilterOptions(){
+    HR_FILTER_DEFS.forEach(fd=>{
+      const subset = hrApplyFiltersExcept(fd.key);
+      const opts=[...new Set(subset.map(d=>d[fd.field]))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
+      const sel=$(fd.selId);
+      const curSel=new Set([...sel.selectedOptions].map(o=>o.value));
+      sel.innerHTML = opts.map(v=>`<option value="${esc(v)}" ${curSel.has(v)?'selected':''}>${esc(v)}</option>`).join('');
+      const stillValid = new Set([...curSel].filter(v=>opts.includes(v)));
+      hrFilters[fd.key] = stillValid;
+    });
+  }
+  function hrData(){ return hrApplyFiltersExcept(null); }
+
+  function hrPillEstado(s){
+    return s==='alerta' ? '<span class="pill-r">3 · Crítico</span>'
+      : s==='precaucion' ? '<span class="pill-y">2 · Precaución</span>'
+      : '<span class="pill-g">1 · Normal</span>';
+  }
+
+  // Celda de un parámetro: solo se resalta (fondo de color) cuando está en
+  // precaución o alerta -igual criterio visual que el resto del tablero-.
+  function hrParamCellHtml(param, m){
+    const val = paramCellText(param, m);
+    if(val===''||val==null) return '—';
+    const st = (m.estados||{})[param] || 'normal';
+    if(st==='normal') return esc(val);
+    return `<span class="${cellClass(st)}" style="padding:1px 6px;border-radius:4px;">${esc(val)}</span>`;
+  }
+
+  // Resumen automático (no depende de lo que haya escrito el laboratorio):
+  // lista los parámetros fuera de rango con su valor, y después los agrupa
+  // por tipo de problema (Elementos de desgaste, Contaminantes, etc.) usando
+  // la misma clasificación que ya usa el reporte impreso por componente.
+  function hrResumenAutomatico(d){
+    if(!d.flags || !d.flags.length) return 'Sin novedades.';
+    const plano = d.flags.map(f=>cleanParam(f.param)+': '+(f.val!==''&&f.val!=null?f.val:'—')).join(', ');
+    const grupos = classifyParams(d.flags.map(f=>f.param));
+    const detalle = grupos.map(g=>g.label+': '+g.params.map(cleanParam).join(', ')).join('. ');
+    return detalle ? plano+'. '+detalle+'.' : plano+'.';
+  }
+
+  function hrParamKeys(rows){
+    const keys = new Set();
+    rows.forEach(d=>Object.keys(d.vals||{}).forEach(k=>keys.add(k)));
+    return classifyParams([...keys]).flatMap(g=>g.params);
+  }
+
+  function hrBuildCols(rows){
+    const fijos = [
+      {key:'informe', label:'Informe', w:70, nofilter:true, noExport:true, text:d=>'', html:d=>reportBtnHTML(d.equipo, d.componente)},
+      {key:'cliente', label:'Cliente', w:150, text:d=>d.cliente},
+      {key:'equipo', label:'Equipo', w:110, mono:true, text:d=>d.equipo},
+      {key:'componente', label:'Componente', w:140, mono:true, text:d=>d.componente},
+      {key:'descriptorComponente', label:'Descriptor componente', w:160, text:d=>d.descriptorComponente},
+      {key:'producto', label:'Producto', w:160, text:d=>d.producto},
+      {key:'fecha', label:'Fecha muestreo', w:110, mono:true, text:d=>fmtDate(d.fecha), sortVal:d=>d.fecha?d.fecha.getTime():-Infinity},
+      {key:'fechaInforme', label:'Fecha informe', w:110, mono:true, text:d=>fmtDate(d.fechaInforme), sortVal:d=>d.fechaInforme?d.fechaInforme.getTime():-Infinity},
+      {key:'edadComponente', label:'Edad componente', w:110, text:d=>[d.edadComponente,d.unidadEdadComponente].filter(Boolean).join(' ')},
+      {key:'edadProducto', label:'Edad producto', w:110, text:d=>[d.edadProducto,d.unidadEdadProducto].filter(Boolean).join(' ')},
+      {key:'estado', label:'Estado', w:110,
+        text:d=>d.status==='alerta'?'3 Crítico':d.status==='precaucion'?'2 Precaución':'1 Normal',
+        html:d=>hrPillEstado(d.status), sortVal:d=>RANK[d.status]||0}
+    ];
+    const dinamicas = hrParamKeys(rows).map(p=>({
+      key:'p_'+p, label:cleanParam(p), w:90, mono:true,
+      text:d=>paramCellText(p,d),
+      html:d=>hrParamCellHtml(p,d),
+      sortVal:d=>{ const v=(d.vals||{})[p]; return (v==null||isNaN(v)) ? -Infinity : v; }
+    }));
+    const finales = [
+      {key:'comentarioDep', label:'Comentario reporte depurado', w:300, text:d=>depurarComentario(d.comentarioReporte)},
+      {key:'resumenAuto', label:'Resumen automático', w:320, text:d=>hrResumenAutomatico(d)}
+    ];
+    return [...fijos, ...dinamicas, ...finales];
+  }
+
+  // Orden por defecto: agrupado por cliente/equipo/componente y, dentro de
+  // cada grupo, de la muestra más antigua a la más reciente.
+  function hrRenderTable(){
+    const rows = hrData().slice().sort((a,b)=>{
+      const ka=[a.cliente,a.equipo,a.componente].join('|'), kb=[b.cliente,b.equipo,b.componente].join('|');
+      if(ka<kb) return -1; if(ka>kb) return 1;
+      const fa=a.fecha?a.fecha.getTime():0, fb=b.fecha?b.fecha.getTime():0;
+      return fa-fb;
+    });
+    gridHR.setCols(hrBuildCols(rows));
+    gridHR.setRows(rows);
+    gridHR.setRowClick(openCompDrawerForSample);
+    gridHR.setSearchCols(['cliente','equipo','componente','descriptorComponente','producto']);
+    const vis = gridHR.render();
+    $('hrCount').innerHTML = '<b>'+vis.length+'</b> de '+dataset.length+' muestras';
+  }
+
+  function refreshHistorialRapido(){
+    if(!dataset.length){ $('hrEmpty').style.display='block'; $('hrBody').style.display='none'; return; }
+    $('hrEmpty').style.display='none'; $('hrBody').style.display='block';
+    hrRefreshFilterOptions();
+    hrRenderTable();
+  }
+
+  function exportHrExcel(){
+    exportGridToExcel(gridHR, {
+      title:'Historial rápido',
+      subtitle:'Todas las muestras filtradas · generado '+fmtDate(new Date()),
+      sheet:'Historial', filename:'Historial_Rapido'
     });
   }
 
@@ -4188,7 +4396,7 @@
     $('dashCount').style.display='none'; $('btnDashReload').style.display='none';
     $('dirInput').value='';
     $('dashEmpty').style.display='block'; $('dashBody').style.display='none';
-    refreshHistorial(); anRefresh(); refreshKpiGestion();
+    refreshHistorial(); anRefresh(); refreshKpiGestion(); refreshHistorialRapido();
   });
   $('dashFilesToggle').addEventListener('click', ()=>{
     const show = $('dashFilesPanel').style.display==='none';
@@ -5557,6 +5765,24 @@
     anRefreshFilterOptions(); renderAllPanels();
   });
 
+  // Historial Rápido
+  HR_FILTER_DEFS.forEach(fd=>$(fd.selId).addEventListener('change', ()=>{
+    hrFilters[fd.key]=new Set([...$(fd.selId).selectedOptions].map(o=>o.value));
+    hrRefreshFilterOptions();
+    hrRenderTable();
+  }));
+  $('btnHrClear').addEventListener('click', ()=>{
+    HR_FILTER_DEFS.forEach(fd=>{ hrFilters[fd.key]=new Set(); });
+    hrRefreshFilterOptions(); hrRenderTable();
+  });
+  let hrSearchT;
+  $('hrSearch').addEventListener('input', e=>{
+    clearTimeout(hrSearchT);
+    hrSearchT=setTimeout(()=>{ gridHR.setSearch(e.target.value); const v=gridHR.render();
+      $('hrCount').innerHTML = '<b>'+v.length+'</b> de '+dataset.length+' muestras'; }, 180);
+  });
+  $('btnHrPrint').addEventListener('click', exportHrExcel);
+
   // KPIs de Gestión
   $('kpifCliente').addEventListener('change', ()=>{
     kpiFilters.clientes = new Set([...$('kpifCliente').selectedOptions].map(o=>o.value));
@@ -5860,6 +6086,7 @@
     refreshHistorial();
     anRefresh();
     refreshKpiGestion();
+    refreshHistorialRapido();
     $('dashStatus').innerHTML = 'Conectado a la nube · <b>' + dataset.length + '</b> muestra(s) · <b>' +
       new Set(dataset.map(d=>d.cliente)).size + '</b> cliente(s).';
   }
