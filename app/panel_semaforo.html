@@ -454,6 +454,8 @@
   .hist-adv-panel .fld{display:flex;flex-direction:column;gap:4px;min-width:200px;}
   .hist-adv-panel label{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);}
   .hist-adv-panel select, .hist-adv-panel input{border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12.5px;font-family:inherit;background:#fff;min-width:200px;}
+  .hist-adv-panel select[multiple]{height:96px;padding:5px;}
+  .hist-adv-panel input.hadv-search{padding:6px 9px;font-size:12px;}
   .grid-report-btn{border:1px solid var(--border);background:#fff;border-radius:7px;width:30px;height:26px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--accent-dark);}
   .grid-report-btn:hover{background:var(--accent-soft);border-color:var(--accent);}
   .val-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:5px;margin-top:6px;}
@@ -1078,24 +1080,96 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             <input type="text" id="histSearch" placeholder="Buscar equipo, componente, cliente…">
           </div>
-          <button class="btn" id="btnHistAdv">Búsqueda avanzada</button>
+          <button class="btn" id="btnHistAdv">Búsqueda específica y exportación Excel</button>
           <button class="btn" id="btnHistCols">Columnas</button>
           <button class="btn btn-ghost" id="btnHistClear">Limpiar orden y filtros</button>
         </div>
 
         <div class="hist-adv-panel" id="histAdvPanel" style="display:none;">
           <div class="fld">
-            <label>Buscar por campo específico</label>
-            <select id="histAdvField">
-              <option value="">— Selecciona un campo —</option>
-            </select>
+            <label>Cliente(s)</label>
+            <input type="text" class="hadv-search" data-hadv-search="hadvCliente" placeholder="Buscar…">
+            <div class="msel-actions"><button type="button" data-hadv-act="hadvCliente" data-act="all">Todos</button><button type="button" data-hadv-act="hadvCliente" data-act="none">Ninguno</button></div>
+            <select id="hadvCliente" multiple></select>
           </div>
-          <div class="fld" style="flex:1;min-width:200px;">
-            <label>Valor a buscar</label>
-            <input type="text" id="histAdvTerm" placeholder="Ej: D10T, 15W-40, 132810…">
+          <div class="fld">
+            <label>Operación(es)</label>
+            <input type="text" class="hadv-search" data-hadv-search="hadvOperacion" placeholder="Buscar…">
+            <div class="msel-actions"><button type="button" data-hadv-act="hadvOperacion" data-act="all">Todas</button><button type="button" data-hadv-act="hadvOperacion" data-act="none">Ninguna</button></div>
+            <select id="hadvOperacion" multiple></select>
           </div>
-          <button class="btn btn-primary" id="btnHistAdvApply">Buscar</button>
-          <button class="btn btn-ghost" id="btnHistAdvClear">Quitar</button>
+          <div class="fld">
+            <label>Equipo(s)</label>
+            <input type="text" class="hadv-search" data-hadv-search="hadvEquipo" placeholder="Buscar…">
+            <div class="msel-actions"><button type="button" data-hadv-act="hadvEquipo" data-act="all">Todos</button><button type="button" data-hadv-act="hadvEquipo" data-act="none">Ninguno</button></div>
+            <select id="hadvEquipo" multiple></select>
+          </div>
+          <div class="fld">
+            <label>Componente(s)</label>
+            <input type="text" class="hadv-search" data-hadv-search="hadvComponente" placeholder="Buscar…">
+            <div class="msel-actions"><button type="button" data-hadv-act="hadvComponente" data-act="all">Todos</button><button type="button" data-hadv-act="hadvComponente" data-act="none">Ninguno</button></div>
+            <select id="hadvComponente" multiple></select>
+          </div>
+          <div class="fld">
+            <label>Descriptor de componente(s)</label>
+            <input type="text" class="hadv-search" data-hadv-search="hadvDescriptor" placeholder="Buscar…">
+            <div class="msel-actions"><button type="button" data-hadv-act="hadvDescriptor" data-act="all">Todos</button><button type="button" data-hadv-act="hadvDescriptor" data-act="none">Ninguno</button></div>
+            <select id="hadvDescriptor" multiple></select>
+          </div>
+          <div class="fld">
+            <label>Producto(s)</label>
+            <input type="text" class="hadv-search" data-hadv-search="hadvProducto" placeholder="Buscar…">
+            <div class="msel-actions"><button type="button" data-hadv-act="hadvProducto" data-act="all">Todos</button><button type="button" data-hadv-act="hadvProducto" data-act="none">Ninguno</button></div>
+            <select id="hadvProducto" multiple></select>
+          </div>
+          <div class="fld">
+            <label>Tipo(s) de producto</label>
+            <input type="text" class="hadv-search" data-hadv-search="hadvTipoProducto" placeholder="Buscar…">
+            <div class="msel-actions"><button type="button" data-hadv-act="hadvTipoProducto" data-act="all">Todos</button><button type="button" data-hadv-act="hadvTipoProducto" data-act="none">Ninguno</button></div>
+            <select id="hadvTipoProducto" multiple></select>
+          </div>
+          <div class="fld">
+            <label>Nivel(es) de servicio</label>
+            <input type="text" class="hadv-search" data-hadv-search="hadvNivelServicio" placeholder="Buscar…">
+            <div class="msel-actions"><button type="button" data-hadv-act="hadvNivelServicio" data-act="all">Todos</button><button type="button" data-hadv-act="hadvNivelServicio" data-act="none">Ninguno</button></div>
+            <select id="hadvNivelServicio" multiple></select>
+          </div>
+          <div class="fld">
+            <label>Fecha muestreo desde</label>
+            <input type="date" id="hadvFechaMuestreoDesde">
+          </div>
+          <div class="fld">
+            <label>Fecha muestreo hasta</label>
+            <input type="date" id="hadvFechaMuestreoHasta">
+          </div>
+          <div class="fld">
+            <label>Fecha informe desde</label>
+            <input type="date" id="hadvFechaInformeDesde">
+          </div>
+          <div class="fld">
+            <label>Fecha informe hasta</label>
+            <input type="date" id="hadvFechaInformeHasta">
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary" id="btnHadvBuscar">Buscar</button>
+            <button class="btn btn-ghost" id="btnHadvLimpiar">Limpiar</button>
+          </div>
+        </div>
+
+        <div id="hadvResults" style="display:none;margin-bottom:16px;">
+          <div class="chart-card">
+            <div class="card-head">
+              <div class="grow">
+                <h4>Resultados de la búsqueda específica</h4>
+                <p class="sub">Una fila por muestra · sin registros duplicados (se usa el Correlativo como identificador único)</p>
+              </div>
+              <span class="count-pill" id="hadvCount"></span>
+              <button class="btn btn-primary" id="btnHadvExport">Exportar a Excel (todas las columnas)</button>
+            </div>
+            <div style="overflow:auto;max-height:480px;">
+              <table class="dash-tbl grid" id="tblHadv"></table>
+            </div>
+          </div>
         </div>
 
         <div class="cfg-panel" id="histColsPanel" style="display:none;">
@@ -2695,6 +2769,25 @@
   const gridKpi  = createGrid('tblKpiUsuarios', 'dashGridKpi_v1');
   const gridEnv  = createGrid('tblEnvejecimiento', 'dashGridEnv_v1');
   const gridFreq = createGrid('tblFrecuencia',   'dashGridFreq_v1');
+  const gridHAdv = createGrid('tblHadv',        'dashGridHAdv_v1');
+
+  // Descarta muestras duplicadas usando el Correlativo (ID único de origen) como
+  // referencia; se aplica siempre que se arma el dataset consolidado, ya sea
+  // desde archivos locales o desde la nube, para que ninguna pantalla ni la
+  // exportación a Excel muestren la misma muestra dos veces.
+  function dedupPorCorrelativo(rows){
+    const vistos = new Set();
+    const out = [];
+    rows.forEach(r=>{
+      const key = strip(r.correlativo);
+      if(key){
+        if(vistos.has(key)) return;
+        vistos.add(key);
+      }
+      out.push(r);
+    });
+    return out;
+  }
 
   function parseDate(v){
     if(v===""||v==null) return null;
@@ -2796,7 +2889,7 @@
 
   // Reconstruye el dataset consolidado solo con los archivos marcados (checked) en la lista desplegable
   function rebuildDataset(){
-    dataset = filesData.filter(f=>f.checked).flatMap(f=>f.rows);
+    dataset = dedupPorCorrelativo(filesData.filter(f=>f.checked).flatMap(f=>f.rows));
     renderFileList();
 
     const okChecked = filesData.filter(f=>f.checked && f.ok).length;
@@ -3813,48 +3906,15 @@
     saveHistColCfg(); renderHistColsList(); renderHistList();
   }
 
-  /* ---- Búsqueda avanzada: por un campo específico de texto/categoría ---- */
-  const HIST_ADV_FIELDS = [
-    {key:'cliente', label:'Cliente', get:c=>c.cliente},
-    {key:'operacion', label:'Operación', get:c=>c.ult.operacion},
-    {key:'tipoEquipo', label:'Tipo de equipo', get:c=>c.tipoEquipo},
-    {key:'equipo', label:'Equipo', get:c=>c.equipo},
-    {key:'marcaEquipo', label:'Marca de equipo', get:c=>c.ult.marcaEquipo},
-    {key:'modeloEquipo', label:'Modelo de equipo', get:c=>c.ult.modeloEquipo},
-    {key:'componente', label:'Componente', get:c=>c.componente},
-    {key:'descriptorComponente', label:'Descriptor de componente', get:c=>c.ult.descriptorComponente},
-    {key:'marcaComponente', label:'Marca de componente', get:c=>c.ult.marcaComponente},
-    {key:'modeloComponente', label:'Modelo de componente', get:c=>c.ult.modeloComponente},
-    {key:'producto', label:'Producto', get:c=>c.producto},
-    {key:'tipoProducto', label:'Tipo de producto', get:c=>c.ult.tipoProducto},
-    {key:'nivelServicio', label:'Nivel de servicio', get:c=>c.ult.nivelServicio},
-    {key:'solicitud', label:'N° solicitud', get:c=>c.ult.solicitud},
-    {key:'muestra', label:'N° muestra', get:c=>c.ult.muestra},
-    {key:'estadoReporte', label:'Estado de reporte', get:c=>c.ult.estadoReporte},
-    {key:'estadoProducto', label:'Estado de producto', get:c=>c.ult.estadoProducto},
-    {key:'usuario', label:'Usuario', get:c=>c.ult.usuario}
-  ];
-  let histAdv = {field:'', term:''};
-
   function renderHistList(){
     let rows = calcComponentesBase(dataset).sort((a,b)=>(b.ult.fecha?b.ult.fecha.getTime():0)-(a.ult.fecha?a.ult.fecha.getTime():0));
-    if(histAdv.field && histAdv.term){
-      const fd = HIST_ADV_FIELDS.find(f=>f.key===histAdv.field);
-      const term = strip(histAdv.term);
-      if(fd) rows = rows.filter(c=>c.muestras.some(m=>{
-        const val = fd.key==='cliente' ? m.cliente : fd.key==='tipoEquipo' ? m.tipoEquipo
-          : fd.key==='equipo' ? m.equipo : fd.key==='componente' ? m.componente
-          : fd.key==='producto' ? m.producto : m[fd.key];
-        return strip(val).includes(term);
-      }));
-    }
     if(!histColCfg) histColCfg = loadHistColCfg();
     gridHist.setCols(histVisibleCols());
     gridHist.setRows(rows);
     gridHist.setRowClick(c=>{ reportBackTarget=null; updateHistBackLabel(); openReport(c); });
     const vis = gridHist.render();
     $('histCount').style.display='inline-block';
-    $('histCount').textContent = vis.length+' de '+rows.length+' componentes'+(histAdv.field&&histAdv.term?' · filtro avanzado activo':'');
+    $('histCount').textContent = vis.length+' de '+rows.length+' componentes';
   }
 
   function refreshHistorial(){
@@ -3867,11 +3927,208 @@
     $('histEmpty').style.display='none';
     $('histListBody').style.display='block';
     if(!histColCfg) histColCfg = loadHistColCfg();
-    if(!$('histAdvField').options.length || $('histAdvField').options.length===1){
-      $('histAdvField').innerHTML = '<option value="">— Selecciona un campo —</option>' +
-        HIST_ADV_FIELDS.map(f=>`<option value="${f.key}">${esc(f.label)}</option>`).join('');
-    }
     renderHistList();
+    hadvRefreshOptions();
+  }
+
+  /* ==================== Búsqueda específica y exportación Excel ==================== */
+  // Filtro con jerarquía mutua (igual patrón que Analytic/anFilters): cada
+  // campo ofrece solo los valores compatibles con lo ya elegido en los demás.
+  const HADV_FILTER_DEFS = [
+    {key:'cliente',        field:'cliente',              selId:'hadvCliente'},
+    {key:'operacion',      field:'operacion',            selId:'hadvOperacion'},
+    {key:'equipo',         field:'equipo',                selId:'hadvEquipo'},
+    {key:'componente',     field:'componente',            selId:'hadvComponente'},
+    {key:'descriptor',     field:'descriptorComponente',  selId:'hadvDescriptor'},
+    {key:'producto',       field:'producto',              selId:'hadvProducto'},
+    {key:'tipoProducto',   field:'tipoProducto',          selId:'hadvTipoProducto'},
+    {key:'nivelServicio',  field:'nivelServicio',         selId:'hadvNivelServicio'}
+  ];
+  const hadvFilters = {};
+  HADV_FILTER_DEFS.forEach(fd=>hadvFilters[fd.key]=new Set());
+  const hadvSearchTerms = {};
+  HADV_FILTER_DEFS.forEach(fd=>hadvSearchTerms[fd.key]='');
+  let hadvValidPools = {};
+  let hadvResults = [];
+
+  function hadvDateRange(){
+    return {
+      d1: $('hadvFechaMuestreoDesde').value ? new Date($('hadvFechaMuestreoDesde').value+'T00:00:00') : null,
+      d2: $('hadvFechaMuestreoHasta').value ? new Date($('hadvFechaMuestreoHasta').value+'T23:59:59') : null,
+      i1: $('hadvFechaInformeDesde').value ? new Date($('hadvFechaInformeDesde').value+'T00:00:00') : null,
+      i2: $('hadvFechaInformeHasta').value ? new Date($('hadvFechaInformeHasta').value+'T23:59:59') : null
+    };
+  }
+  function hadvApplyExcept(exceptKey){
+    const {d1,d2,i1,i2} = hadvDateRange();
+    return dataset.filter(d=>{
+      for(const fd of HADV_FILTER_DEFS){
+        if(fd.key===exceptKey) continue;
+        const set=hadvFilters[fd.key];
+        if(set.size && !set.has(d[fd.field])) return false;
+      }
+      if(d1 && (!d.fecha || d.fecha<d1)) return false;
+      if(d2 && (!d.fecha || d.fecha>d2)) return false;
+      if(i1 && (!d.fechaInforme || d.fechaInforme<i1)) return false;
+      if(i2 && (!d.fechaInforme || d.fechaInforme>i2)) return false;
+      return true;
+    });
+  }
+  function hadvRenderSelect(fd){
+    const pool = hadvValidPools[fd.key] || [];
+    const term = strip(hadvSearchTerms[fd.key]);
+    const shown = term ? pool.filter(v=>strip(v).includes(term)) : pool;
+    const sel = $(fd.selId);
+    sel.innerHTML = shown.map(v=>`<option value="${esc(v)}" ${hadvFilters[fd.key].has(v)?'selected':''}>${esc(v)}</option>`).join('');
+  }
+  function hadvRefreshOptions(){
+    if(!dataset.length) return;
+    HADV_FILTER_DEFS.forEach(fd=>{
+      const subset = hadvApplyExcept(fd.key);
+      const pool = [...new Set(subset.map(d=>d[fd.field]))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
+      hadvValidPools[fd.key] = pool;
+      hadvFilters[fd.key] = new Set([...hadvFilters[fd.key]].filter(v=>pool.includes(v)));
+    });
+    HADV_FILTER_DEFS.forEach(fd=>hadvRenderSelect(fd));
+  }
+  function hadvSelectChanged(fd){
+    const sel = $(fd.selId);
+    const shownValues = [...sel.options].map(o=>o.value);
+    const selectedShown = new Set([...sel.selectedOptions].map(o=>o.value));
+    shownValues.forEach(v=>{
+      if(selectedShown.has(v)) hadvFilters[fd.key].add(v);
+      else hadvFilters[fd.key].delete(v);
+    });
+    hadvRefreshOptions();
+  }
+
+  const HADV_PREVIEW_COLS = [
+    {key:'cliente',    label:'Cliente',                w:170, text:d=>d.cliente},
+    {key:'operacion',  label:'Operación',              w:150, text:d=>d.operacion},
+    {key:'equipo',     label:'Equipo',                 w:110, mono:true, text:d=>d.equipo},
+    {key:'componente', label:'Componente',             w:150, mono:true, text:d=>d.componente},
+    {key:'descriptorComponente', label:'Descriptor de componente', w:150, text:d=>d.descriptorComponente},
+    {key:'producto',   label:'Producto',               w:170, text:d=>d.producto},
+    {key:'tipoProducto', label:'Tipo de producto',     w:140, text:d=>d.tipoProducto},
+    {key:'nivelServicio', label:'Nivel de servicio',   w:130, text:d=>d.nivelServicio},
+    {key:'correlativo', label:'Correlativo',           w:120, mono:true, text:d=>d.correlativo},
+    {key:'fecha',      label:'Fecha de muestra',       w:120, mono:true, text:d=>fmtDate(d.fecha), sortVal:d=>d.fecha?d.fecha.getTime():0},
+    {key:'fechaInforme', label:'Fecha de informe',     w:120, mono:true, text:d=>fmtDate(d.fechaInforme), sortVal:d=>d.fechaInforme?d.fechaInforme.getTime():0},
+    {key:'estado',     label:'Estado',                 w:112, text:d=>d.status==='alerta'?'Alerta':d.status==='precaucion'?'Precaución':'Normal',
+       html:d=>pillEstado(d.status), sortVal:d=>RANK[d.status]||0}
+  ];
+
+  function hadvBuscar(){
+    hadvResults = dedupPorCorrelativo(hadvApplyExcept(null));
+    gridHAdv.setCols(HADV_PREVIEW_COLS);
+    gridHAdv.setRows(hadvResults);
+    gridHAdv.setRowClick(openCompDrawerForSample);
+    const vis = gridHAdv.render();
+    $('hadvResults').style.display='block';
+    $('hadvCount').textContent = vis.length+' de '+hadvResults.length+' muestra(s)';
+  }
+  function hadvLimpiar(){
+    HADV_FILTER_DEFS.forEach(fd=>{ hadvFilters[fd.key]=new Set(); hadvSearchTerms[fd.key]=''; });
+    document.querySelectorAll('.hadv-search').forEach(inp=>inp.value='');
+    ['hadvFechaMuestreoDesde','hadvFechaMuestreoHasta','hadvFechaInformeDesde','hadvFechaInformeHasta'].forEach(id=>$(id).value='');
+    hadvRefreshOptions();
+    hadvResults = [];
+    $('hadvResults').style.display='none';
+    gridHAdv.clear();
+  }
+
+  // "Horas" viene siempre como texto (a veces con la unidad incluida, p.ej. "1200 Horas");
+  // para la exportación se pide solo el valor numérico.
+  function hadvParseHoras(raw){
+    if(raw===null || raw===undefined || raw==='') return null;
+    const n = parseFloat(String(raw).replace(/[^\d.,-]/g,'').replace(',','.'));
+    return isNaN(n) ? null : n;
+  }
+  const hadvNumFmt = n => Number.isInteger(n) ? '0' : '0.00';
+
+  const HADV_EXPORT_BASE_COLS = [
+    {label:'NOMBRE_CLIENTE',  key:'cliente',               type:'text'},
+    {label:'NOMBRE_OPERACION',key:'operacion',              type:'text'},
+    {label:'N_SOLICITUD',     key:'solicitud',              type:'text'},
+    {label:'N_MUESTRA',       key:'muestra',                type:'text'},
+    {label:'EQUIPO',          key:'equipo',                 type:'text'},
+    {label:'TIPO_EQUIPO',     key:'tipoEquipo',             type:'text'},
+    {label:'MARCA_EQUIPO',    key:'marcaEquipo',            type:'text'},
+    {label:'MODELO_EQUIPO',   key:'modeloEquipo',           type:'text'},
+    {label:'COMPONENTE',      key:'componente',             type:'text'},
+    {label:'MARCA_COMPONENTE',key:'marcaComponente',        type:'text'},
+    {label:'MODELO_COMPONENTE',key:'modeloComponente',      type:'text'},
+    {label:'DESCRIPTOR_COMPONENTE',key:'descriptorComponente', type:'text'},
+    {label:'PRODUCTO',        key:'producto',               type:'text'},
+    {label:'TIPO_PRODUCTO',   key:'tipoProducto',           type:'text'},
+    {label:'HORAS_COMPONENTE',key:'edadComponente',         type:'horas'},
+    {label:'HORAS_PRODUCTO',  key:'edadProducto',           type:'horas'},
+    {label:'CANTIDAD_ADICIONADA', key:'cantidadAdicionada', type:'numtext'},
+    {label:'UNIDAD_CANTIDAD_ADICIONADA', key:'unidadCantidadAdicionada', type:'text'},
+    {label:'CAMBIO_DE_PRODUCTO', key:'cambioProducto',      type:'text'},
+    {label:'CAMBIO_DE_FILTRO', key:'cambioFiltro',          type:'text'},
+    {label:'NIVEL_DE_SERVICIO', key:'nivelServicio',        type:'text'},
+    {label:'ESTADO_PRODUCTO', key:'estadoProducto',         type:'text'},
+    {label:'ESTADO_DESGASTE', key:'estadoDesgaste',         type:'text'},
+    {label:'ESTADO_CONTAMINACION', key:'estadoContaminacion', type:'text'},
+    {label:'ESTADO_REPORTE',  key:'estadoReporte',          type:'text'},
+    {label:'CORRELATIVO',     key:'correlativo',            type:'text'},
+    {label:'CODIGO_ISO',      key:'iso',                    type:'text'},
+    {label:'COMENTARIO_CLIENTE', key:'comentarioCliente',   type:'text'},
+    {label:'COMENTARIO_REPORTE', key:'comentarioReporte',   type:'text'},
+    {label:'USUARIO',         key:'usuario',                type:'text'},
+    {label:'FECHA_MUESTREO',  key:'fecha',                  type:'date'},
+    {label:'FECHA_INGRESO',   key:'fechaIngreso',           type:'date'},
+    {label:'FECHA_RECEPCION', key:'fechaRecepcion',         type:'date'},
+    {label:'FECHA_INFORME',   key:'fechaInforme',           type:'date'}
+  ];
+
+  // Exporta TODAS las columnas de cada muestra encontrada (no solo la vista
+  // previa en pantalla), con formato de fecha/entero/decimal y sin duplicados
+  // (Correlativo como referencia).
+  async function exportHadvFullExcel(){
+    if(!hadvResults.length){ alert('No hay resultados para exportar. Usa "Buscar" primero.'); return; }
+    const rows = dedupPorCorrelativo(hadvResults);
+    const paramKeys = [...new Set(rows.flatMap(d=>Object.keys(d.vals||{})))].sort((a,b)=>cleanParam(a).localeCompare(cleanParam(b),'es'));
+
+    const cols = [...HADV_EXPORT_BASE_COLS];
+    paramKeys.forEach(p=>{
+      cols.push({label:cleanParam(p), key:'__val_'+p, type:'param', param:p});
+      cols.push({label:cleanParam(p)+' - Estado', key:'__est_'+p, type:'estado', param:p});
+    });
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Resultados');
+    ws.columns = cols.map(c=>({header:c.label, width:/coment/i.test(c.label)?46:18}));
+    ws.getRow(1).font={bold:true};
+    ws.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEAF3F7'}};
+
+    rows.forEach(d=>{
+      const vals = cols.map(c=>{
+        if(c.type==='param') return (d.vals||{})[c.param] ?? null;
+        if(c.type==='estado') return (d.estados||{})[c.param] || '';
+        if(c.type==='horas') return hadvParseHoras(d[c.key]);
+        if(c.type==='date') return d[c.key] || null;
+        if(c.type==='numtext'){ const n=parseFloat(d[c.key]); return isNaN(n) ? (d[c.key]||'') : n; }
+        return d[c.key] || '';
+      });
+      const r = ws.addRow(vals);
+      cols.forEach((c,i)=>{
+        const cell = r.getCell(i+1);
+        if(c.type==='date'){ if(cell.value instanceof Date) cell.numFmt='dd/mm/yyyy'; }
+        else if(typeof cell.value==='number'){ cell.numFmt = hadvNumFmt(cell.value); }
+      });
+    });
+
+    ws.autoFilter={from:'A1', to:{row:1, column:cols.length}};
+    ws.views=[{state:'frozen', ySplit:1}];
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Busqueda_especifica_'+new Date().toISOString().slice(0,10)+'.xlsx';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 3000);
   }
 
   function showHistSub(name){
@@ -4304,21 +4561,39 @@
     }
   });
 
-  // Búsqueda avanzada por campo específico
+  // Búsqueda específica y exportación Excel
   $('btnHistAdv').addEventListener('click', ()=>{
     const show = $('histAdvPanel').style.display==='none';
     $('histAdvPanel').style.display = show ? 'flex' : 'none';
     $('btnHistAdv').classList.toggle('btn-primary', show);
     $('histColsPanel').style.display='none'; $('btnHistCols').classList.remove('btn-primary');
+    if(show) hadvRefreshOptions();
   });
-  $('btnHistAdvApply').addEventListener('click', ()=>{
-    histAdv = {field:$('histAdvField').value, term:$('histAdvTerm').value.trim()};
-    renderHistList();
+  HADV_FILTER_DEFS.forEach(fd=>$(fd.selId).addEventListener('change', ()=>hadvSelectChanged(fd)));
+  document.querySelectorAll('.hadv-search').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const fd = HADV_FILTER_DEFS.find(f=>f.selId===inp.dataset.hadvSearch);
+      if(!fd) return;
+      hadvSearchTerms[fd.key] = inp.value;
+      hadvRenderSelect(fd);
+    });
   });
-  $('histAdvTerm').addEventListener('keydown', e=>{ if(e.key==='Enter') $('btnHistAdvApply').click(); });
-  $('btnHistAdvClear').addEventListener('click', ()=>{
-    histAdv={field:'',term:''}; $('histAdvField').value=''; $('histAdvTerm').value=''; renderHistList();
+  document.querySelectorAll('.msel-actions [data-hadv-act]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const fd = HADV_FILTER_DEFS.find(f=>f.selId===btn.dataset.hadvAct);
+      if(!fd) return;
+      const shown = [...$(fd.selId).options].map(o=>o.value);
+      if(btn.dataset.act==='all') shown.forEach(v=>hadvFilters[fd.key].add(v));
+      else shown.forEach(v=>hadvFilters[fd.key].delete(v));
+      hadvRefreshOptions();
+    });
   });
+  ['hadvFechaMuestreoDesde','hadvFechaMuestreoHasta','hadvFechaInformeDesde','hadvFechaInformeHasta'].forEach(id=>{
+    $(id).addEventListener('change', hadvRefreshOptions);
+  });
+  $('btnHadvBuscar').addEventListener('click', hadvBuscar);
+  $('btnHadvLimpiar').addEventListener('click', hadvLimpiar);
+  $('btnHadvExport').addEventListener('click', exportHadvFullExcel);
 
   // Columnas visibles y orden del listado de Historial
   $('btnHistCols').addEventListener('click', ()=>{
@@ -5842,7 +6117,7 @@
       if(!data || data.length < page) break;
       desde += page;
     }
-    dataset = filas;
+    dataset = dedupPorCorrelativo(filas);
     filesData = [];
     renderFileList();
     $('dashCount').style.display = 'inline-block';
