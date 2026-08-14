@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GestionLube V16 · Análisis de Aceite Usado</title>
+<title>GestionLube V18 · Análisis de Aceite Usado</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -550,6 +550,16 @@
   .an-zbtn:hover{background:var(--accent-soft);color:var(--accent-dark);}
   .an-zoom-pct{font-size:10.5px;color:var(--ink-soft);min-width:34px;text-align:center;font-family:'IBM Plex Mono',monospace;}
   .an-hidden{display:none!important;}
+
+  /* ================= CONDITION CENTER (V18) ================= */
+  .cc-sub{display:none;}
+  .cc-sub.active{display:block;}
+  .cc-subnav{flex-wrap:wrap;height:auto;}
+  .cc-health-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;padding:3px 9px;border-radius:999px;font-weight:700;font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+  .cc-health-badge.h90{background:var(--lamp-green-soft);color:#166b46;border:1px solid var(--lamp-green-border);}
+  .cc-health-badge.h70{background:var(--warn-bg);color:var(--warn-text);border:1px solid var(--warn-border);}
+  .cc-health-badge.h50{background:#fbe3c8;color:#8a4b12;border:1px solid #edc399;}
+  .cc-health-badge.h0{background:var(--danger-bg);color:var(--danger-text);border:1px solid var(--danger-border);}
 </style>
 </head>
 <body>
@@ -566,7 +576,11 @@
   </div>
   <nav class="side-nav">
     <div class="side-sect">Módulos</div>
-    <button class="nav-item active" data-view="semaforo">
+    <button class="nav-item active" data-view="condition">
+      <span class="nav-ico">🏭</span>
+      <span class="nav-txt"><strong>Condition Center</strong><small>Monitoreo de condición y analítica predictiva</small></span>
+    </button>
+    <button class="nav-item" data-view="semaforo">
       <span class="nav-ico">🚦</span>
       <span class="nav-txt"><strong>Plantilla Semáforo</strong><small>Ordenamiento y exportación</small></span>
     </button>
@@ -587,11 +601,101 @@
       <span class="nav-txt"><strong>Analytic</strong><small>Exploración estadística avanzada</small></span>
     </button>
   </nav>
-  <div class="side-foot">GestionLube V16</div>
+  <div class="side-foot">GestionLube V18</div>
 </aside>
 
 <div class="main">
-<section class="view active" id="view-semaforo">
+<section class="view active" id="view-condition">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="lamp-mark"><span class="g on"></span><span class="y"></span><span class="r"></span></div>
+      <div class="brand-text">
+        <h1 class="display">Condition Center</h1>
+        <p>Monitoreo de condición · analítica predictiva · inteligencia de flotas</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="seg cc-subnav" id="ccSubNav" style="margin-bottom:18px;width:fit-content;">
+    <button data-cc="resumen" class="active">Resumen ejecutivo</button>
+    <button data-cc="health">Health Index</button>
+    <button data-cc="anomalias">Anomalías</button>
+    <button data-cc="forecast">Forecast &amp; Predicción</button>
+    <button data-cc="fleet">Fleet Intelligence</button>
+    <button data-cc="heatmap">Heatmap avanzado</button>
+    <button data-cc="correlacion">Correlación</button>
+    <button data-cc="diagnostico">Diagnóstico y fallas</button>
+    <button data-cc="pareto">Pareto ejecutivo</button>
+    <button data-cc="ranking">Ranking predictivo</button>
+  </div>
+
+  <div class="cc-sub active" id="ccSub-resumen"><div id="ccResumenBox"></div></div>
+
+  <div class="cc-sub" id="ccSub-health">
+    <div id="ccHealthEmpty" class="dash-empty" style="display:none;"><h3 class="display">Sin datos cargados</h3><p>Carga datos en Dashboard para ver el Health Index de tus activos.</p></div>
+    <div id="ccHealthBox" style="display:none;">
+      <div class="chart-card">
+        <div class="card-head"><div class="grow"><h4>Health Index por componente</h4><p class="sub">0-100 · Verde ≥90 · Amarillo 70-89 · Naranja 50-69 · Rojo &lt;50</p></div><span class="count-pill" id="ccHealthCount"></span></div>
+        <div style="overflow:auto;max-height:600px;"><table class="dash-tbl grid" id="tblCcHealth"></table></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cc-sub" id="ccSub-anomalias">
+    <div id="ccAnomEmpty" class="dash-empty" style="display:none;"><h3 class="display">Sin datos cargados</h3><p>Carga datos para detectar anomalías.</p></div>
+    <div id="ccAnomBox" style="display:none;">
+      <div class="chart-card">
+        <div class="card-head"><div class="grow"><h4>Anomalías detectadas</h4><p class="sub">Saltos bruscos (≥50% vs. muestra anterior) y desviaciones estadísticas (≥3σ vs. ventana reciente)</p></div><span class="count-pill" id="ccAnomCount"></span></div>
+        <div style="overflow:auto;max-height:600px;"><table class="dash-tbl grid" id="tblCcAnomalias"></table></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cc-sub" id="ccSub-forecast">
+    <div class="chart-card" style="margin-bottom:16px;">
+      <div class="card-head"><div class="grow"><h4>Forecast predictivo y predicción de alerta</h4><p class="sub">Regresión lineal por parámetro · proyección de la siguiente muestra · días estimados hasta cruzar el límite (estimado del histórico)</p></div></div>
+      <div class="fld" style="max-width:520px;">
+        <label>Equipo / componente</label>
+        <select id="ccForecastComp"></select>
+      </div>
+    </div>
+    <div id="ccForecastDetail"></div>
+  </div>
+
+  <div class="cc-sub" id="ccSub-fleet"><div id="ccFleetBox"></div></div>
+
+  <div class="cc-sub" id="ccSub-heatmap">
+    <div class="chart-card"><div class="card-head"><div class="grow"><h4>Heatmap avanzado por equipo</h4><p class="sub">Peor estado más reciente por equipo y parámetro clave · ordenado por condición (peor primero)</p></div></div><div id="ccHeatBox"></div></div>
+  </div>
+
+  <div class="cc-sub" id="ccSub-correlacion">
+    <div class="chart-card"><div class="card-head"><div class="grow"><h4>Correlación automática</h4><p class="sub">Coeficiente de Pearson entre pares de variables relevantes, con toda la flota cargada</p></div></div><div id="ccCorrBox"></div></div>
+  </div>
+
+  <div class="cc-sub" id="ccSub-diagnostico">
+    <div class="chart-card"><div class="card-head"><div class="grow"><h4>Diagnóstico automático y mecanismo de falla</h4><p class="sub">Sistema experto basado en reglas fijas de dominio</p></div></div><div id="ccDiagBox"></div></div>
+  </div>
+
+  <div class="cc-sub" id="ccSub-pareto">
+    <div class="dash-grid-2" id="ccParetoBox">
+      <div class="chart-card"><div class="card-head"><div class="grow"><h4>Pareto de fallas</h4><p class="sub">Por mecanismo de falla diagnosticado</p></div></div><div class="chart-box"><canvas id="ccChParetoFallas"></canvas></div></div>
+      <div class="chart-card"><div class="card-head"><div class="grow"><h4>Pareto de parámetros</h4><p class="sub">Parámetros que más disparan alerta/precaución</p></div></div><div class="chart-box"><canvas id="ccChParetoParams"></canvas></div></div>
+      <div class="chart-card"><div class="card-head"><div class="grow"><h4>Pareto de equipos</h4><p class="sub">Equipos que acumulan más novedades</p></div></div><div class="chart-box"><canvas id="ccChParetoEquipos"></canvas></div></div>
+      <div class="chart-card"><div class="card-head"><div class="grow"><h4>Pareto de flotas</h4><p class="sub">Por tipo de equipo</p></div></div><div class="chart-box"><canvas id="ccChParetoFlotas"></canvas></div></div>
+    </div>
+  </div>
+
+  <div class="cc-sub" id="ccSub-ranking">
+    <div class="chart-card"><div class="card-head"><div class="grow"><h4>Ranking predictivo</h4><p class="sub">Puntaje: Alerta×5 + Precaución×2 + Anomalía×3 + (100-Health)×0.3 + Tendencia deteriorando (+10)</p></div></div><div id="ccRankBox"></div></div>
+  </div>
+</div>
+</section>
+
+<section class="view" id="view-semaforo">
 
 <div class="topbar">
   <div class="topbar-inner">
@@ -6314,6 +6418,771 @@
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => setTimeout(resizeAllCharts, 30));
   });
+
+  /* ============================================================
+     🏭 CONDITION CENTER — V18
+     Monitoreo de condición + analítica predictiva + inteligencia de
+     flotas + soporte a decisiones. Todo el cálculo pesado (Health
+     Index, anomalías, forecast, diagnóstico, correlaciones, Pareto,
+     ranking) se hace UNA sola vez por dataset y se memoiza en
+     `ccModel`. Se recalcula solo cuando cambia el dataset —mismo
+     punto de enganche que ya usan refreshHistorial/anRefresh/
+     refreshKpiGestion: rebuildDataset, cargarDesdeNube y "Limpiar"—,
+     nunca en cada render o cada clic de filtro.
+     ============================================================ */
+
+  const CC_GREEN='#1f9d63', CC_YELLOW='#e2a323', CC_ORANGE='#d8842e', CC_RED='#d13f3f';
+  // avg() ya existe más abajo en el archivo (function avg(vals){...}, filtra
+  // nulos) — se reutiliza tal cual, las declaraciones function se hoistean.
+
+  // Parámetros "vigilados" para Forecast / Predicción de alerta / Anomalías /
+  // Heatmap / Correlación. Se resuelven UNA vez contra los encabezados reales
+  // del dataset cargado (varían un poco de plantilla a plantilla de
+  // laboratorio), reutilizando las mismas expresiones regulares que ya usa
+  // el resto de la app para clasificar parámetros (ver GROUP_DEF).
+  const CC_WATCHED = [
+    {key:'fe', label:'Hierro (Fe)', rx:/HIERRO/i},
+    {key:'cu', label:'Cobre (Cu)', rx:/COBRE/i},
+    {key:'pb', label:'Plomo (Pb)', rx:/PLOMO/i},
+    {key:'cr', label:'Cromo (Cr)', rx:/CROMO/i},
+    {key:'al', label:'Aluminio (Al)', rx:/ALUMINIO/i},
+    {key:'si', label:'Silicio (Si)', rx:/SILICIO/i},
+    {key:'na', label:'Sodio (Na)', rx:/SODIO/i},
+    {key:'k',  label:'Potasio (K)', rx:/POTASIO/i},
+    {key:'agua', label:'Agua', rx:/AGUA/i},
+    {key:'pq', label:'Índice PQ', rx:/[ÍI]NDICE PQ/i},
+    {key:'bn', label:'Número básico (BN)', rx:/N[ÚU]MERO B[ÁA]SICO/i},
+    {key:'an', label:'Número ácido (AN)', rx:/N[ÚU]MERO [ÁA]CIDO/i},
+    {key:'oxidacion', label:'Oxidación', rx:/OXIDACI[ÓO]N/i},
+    {key:'nitracion', label:'Nitración', rx:/NITRACI[ÓO]N/i},
+    {key:'hollin', label:'Hollín', rx:/HOLL[ÍI]N/i},
+    {key:'viscosidad', label:'Viscosidad 40°C', rx:/VISCOSIDAD A 40/i},
+    {key:'combustible', label:'Dilución por combustible', rx:/DILUCI[ÓO]N POR COMBUSTIBLE/i}
+  ];
+  const CC_ISO_KEY = '__iso';
+  function isoLevel(iso){
+    if(!iso) return null;
+    const m = String(iso).match(/(\d+)/);
+    return m ? parseInt(m[1],10) : null;
+  }
+  function ccResolveWatchedKeys(ds){
+    const universe = [...new Set(ds.flatMap(d=>Object.keys(d.vals||{})))];
+    const out = {};
+    CC_WATCHED.forEach(w=>{ out[w.key] = universe.filter(p=>w.rx.test(p)); });
+    return out;
+  }
+  function ccVal(m, keys){
+    let v=null;
+    (keys||[]).forEach(k=>{ const x=(m.vals||{})[k]; if(x!==null && x!==undefined && !isNaN(x)) v = (v===null) ? x : Math.max(v,x); });
+    return v;
+  }
+  function ccEstado(m, keys){
+    let worst=null;
+    (keys||[]).forEach(k=>{ const st=(m.estados||{})[k]; if(st==='alerta') worst='alerta'; else if(st==='precaucion' && worst!=='alerta') worst='precaucion'; });
+    return worst; // null = sin dato para este parámetro en esta muestra
+  }
+  function ccSeriesForComponent(c, canonicalKey, watchedKeys){
+    const keys = canonicalKey===CC_ISO_KEY ? null : watchedKeys[canonicalKey];
+    const out = [];
+    c.muestras.forEach(m=>{
+      const v = canonicalKey===CC_ISO_KEY ? isoLevel(m.iso) : ccVal(m, keys);
+      if(v!==null && v!==undefined && !isNaN(v) && m.fecha) out.push({fecha:m.fecha, valor:v, estado: canonicalKey===CC_ISO_KEY ? null : ccEstado(m, keys)});
+    });
+    return out;
+  }
+
+  /* ---------- Regresión lineal simple (y = slope·x + intercept) ---------- */
+  function ccLinRegress(pts){
+    const n = pts.length;
+    if(n<3) return null;
+    const sx=pts.reduce((a,p)=>a+p.x,0), sy=pts.reduce((a,p)=>a+p.y,0);
+    const sxx=pts.reduce((a,p)=>a+p.x*p.x,0), sxy=pts.reduce((a,p)=>a+p.x*p.y,0);
+    const denom = n*sxx-sx*sx;
+    if(denom===0) return null;
+    const slope=(n*sxy-sx*sy)/denom, intercept=(sy-slope*sx)/n;
+    const meanY=sy/n;
+    const ssTot=pts.reduce((a,p)=>a+(p.y-meanY)**2,0);
+    const ssRes=pts.reduce((a,p)=>a+(p.y-(slope*p.x+intercept))**2,0);
+    const r2 = ssTot>0 ? Math.max(0,1-(ssRes/ssTot)) : (ssRes===0?1:0);
+    return {slope, intercept, r2, n};
+  }
+  function ccForecastFromSeries(serie){
+    if(serie.length<3) return null;
+    const t0 = serie[0].fecha.getTime();
+    const pts = serie.map(s=>({x:(s.fecha.getTime()-t0)/86400000, y:s.valor}));
+    const reg = ccLinRegress(pts);
+    if(!reg) return null;
+    const lastX = pts[pts.length-1].x;
+    const intervalos=[]; for(let i=1;i<pts.length;i++) intervalos.push(pts[i].x-pts[i-1].x);
+    const intervaloProm = intervalos.length ? avg(intervalos) : 30;
+    const nextX = lastX + (intervaloProm||30);
+    const nextValue = reg.slope*nextX + reg.intercept;
+    return {...reg, lastX, lastValue:serie[serie.length-1].valor, lastDate:serie[serie.length-1].fecha, nextX, nextValue};
+  }
+
+  /* ---------- Detección de anomalías (saltos bruscos / desviación estándar) ---------- */
+  function ccDetectAnomalies(serie, label){
+    const out=[];
+    for(let i=1;i<serie.length;i++){
+      const v=serie[i].valor, prev=serie[i-1].valor;
+      const delta = v-prev;
+      const pct = prev!==0 ? (delta/Math.abs(prev))*100 : null;
+      // Desviación estándar sobre los SALTOS previos (no sobre los valores
+      // absolutos): así una tendencia sostenida (subida/bajada constante) no
+      // se marca como anomalía por sí sola, solo un salto atípico frente al
+      // "ruido" normal entre muestras consecutivas.
+      const prevDeltas=[];
+      for(let j=Math.max(1,i-4); j<i; j++) prevDeltas.push(serie[j].valor-serie[j-1].valor);
+      let z=0;
+      if(prevDeltas.length>=3){
+        const m=avg(prevDeltas);
+        const sd=Math.sqrt(prevDeltas.reduce((a,b)=>a+(b-m)**2,0)/prevDeltas.length);
+        z = sd>0 ? (delta-m)/sd : 0;
+      }
+      const esSalto = pct!==null && Math.abs(pct)>=50;
+      const esDesv = Math.abs(z)>=3;
+      if(esSalto || esDesv){
+        out.push({param:label, fecha:serie[i].fecha, valor:v, valorPrevio:prev, cambioPct:pct, z,
+          tipo: esDesv && !esSalto ? 'Desviación estadística' : 'Salto brusco'});
+      }
+    }
+    return out;
+  }
+
+  /* ---------- Health Index (0-100) ---------- */
+  function ccTextoSeveridad(s){
+    const t = strip(s||'');
+    if(!t) return 0;
+    if(/alerta|critic|malo|rechaz|no apto|fuera de rango/.test(t)) return 2;
+    if(/precau|regular|marginal|revisar/.test(t)) return 1;
+    return 0;
+  }
+  function ccHealthColor(score){
+    if(score>=90) return {color:CC_GREEN, band:'Verde', cls:'h90'};
+    if(score>=70) return {color:CC_YELLOW, band:'Amarillo', cls:'h70'};
+    if(score>=50) return {color:CC_ORANGE, band:'Naranja', cls:'h50'};
+    return {color:CC_RED, band:'Rojo', cls:'h0'};
+  }
+  function ccHealthIndex(c, recentAnomalies){
+    const breakdown=[];
+    let score=100;
+    const nAl = (c.ult.flags||[]).filter(f=>f.st==='alerta').length;
+    const nPr = (c.ult.flags||[]).filter(f=>f.st==='precaucion').length;
+    if(nAl){ const p=Math.min(nAl,4)*10; score-=p; breakdown.push({label:nAl+' parámetro(s) en alerta', delta:-p}); }
+    if(nPr){ const p=Math.min(nPr,4)*4; score-=p; breakdown.push({label:nPr+' parámetro(s) en precaución', delta:-p}); }
+    const ultimas3 = c.muestras.slice(-3);
+    const cuentaPorParam = new Map();
+    ultimas3.forEach(m=>(m.flags||[]).forEach(f=>cuentaPorParam.set(f.param,(cuentaPorParam.get(f.param)||0)+1)));
+    const reincidentes = [...cuentaPorParam.values()].filter(n=>n>=2).length;
+    if(reincidentes){ const p=Math.min(reincidentes,2)*8; score-=p; breakdown.push({label:reincidentes+' parámetro(s) reincidente(s)', delta:-p}); }
+    const nAnomRecientes = (recentAnomalies||[]).length;
+    if(nAnomRecientes){ const p=Math.min(nAnomRecientes,2)*10; score-=p; breakdown.push({label:nAnomRecientes+' anomalía(s) reciente(s)', delta:-p}); }
+    if(c.tend==='Deteriorando'){ score-=10; breakdown.push({label:'Tendencia deteriorando', delta:-10}); }
+    else if(c.tend==='Mejorando'){ score+=5; breakdown.push({label:'Tendencia mejorando', delta:5}); }
+    [['Estado de desgaste',c.ult.estadoDesgaste],['Estado de contaminación',c.ult.estadoContaminacion],['Estado de producto',c.ult.estadoProducto]].forEach(([lbl,val])=>{
+      const sev=ccTextoSeveridad(val);
+      if(sev){ const p=sev*8; score-=p; breakdown.push({label:lbl+': "'+val+'"', delta:-p}); }
+    });
+    score = Math.max(0, Math.min(100, Math.round(score)));
+    return {score, ...ccHealthColor(score), breakdown};
+  }
+
+  /* ---------- Límites estimados del histórico (para predicción de alerta) ---------- */
+  function ccEstimateLimits(ds, watchedKeys){
+    const limits={};
+    CC_WATCHED.forEach(w=>{
+      const keys=watchedKeys[w.key]||[];
+      if(!keys.length) return;
+      const alertaVals=[], normalVals=[];
+      ds.forEach(d=>{
+        keys.forEach(k=>{
+          const v=(d.vals||{})[k], st=(d.estados||{})[k];
+          if(v===null||v===undefined||isNaN(v)) return;
+          if(st==='alerta') alertaVals.push(v);
+          else if(st==='normal') normalVals.push(v);
+        });
+      });
+      if(!alertaVals.length) return;
+      const meanA=avg(alertaVals), meanN=normalVals.length?avg(normalVals):meanA;
+      const direction = meanA>=meanN ? 1 : -1;
+      const limite = direction===1 ? Math.min(...alertaVals) : Math.max(...alertaVals);
+      limits[w.key]={limite, direction, n:alertaVals.length};
+    });
+    return limits;
+  }
+  function ccDiasHastaLimite(forecast, limit){
+    if(!forecast || !limit) return null;
+    if(limit.direction===1 && forecast.slope<=0) return null;
+    if(limit.direction===-1 && forecast.slope>=0) return null;
+    const xCross = (limit.limite - forecast.intercept)/forecast.slope;
+    const dias = Math.round(xCross - forecast.lastX);
+    if(dias<=0) return {dias:0, fecha:new Date(), yaCruzado:true, limite:limit.limite};
+    if(dias>3650) return null; // proyección demasiado lejana para ser útil
+    return {dias, fecha:new Date(Date.now()+dias*86400000), yaCruzado:false, limite:limit.limite};
+  }
+
+  /* ---------- Diagnóstico automático (motor de reglas fijas) ---------- */
+  function ccDiagnoseComponent(c, watchedKeys){
+    const ult = c.ult;
+    const elevado = key => !!ccEstado(ult, watchedKeys[key]);
+    const bajo = key => {
+      const keys=watchedKeys[key]; if(!keys||!keys.length) return false;
+      const serie = ccSeriesForComponent(c, key, watchedKeys);
+      if(serie.length<2) return false;
+      const st = ccEstado(ult, keys);
+      return (st==='alerta'||st==='precaucion') && serie[serie.length-1].valor < serie[serie.length-2].valor;
+    };
+    const hallazgos=[];
+    const push=(mecanismo,hallazgo,diagnostico,recomendacion)=>hallazgos.push({mecanismo,hallazgo,diagnostico,recomendacion});
+    if(elevado('fe') && elevado('si')) push('Desgaste abrasivo','Hierro y Silicio elevados simultáneamente','Desgaste abrasivo por ingreso de partículas duras (polvo/arena) al sistema.','Revisar sellos, respiraderos y filtros de aire; verificar integridad del sistema de sellado.');
+    else if(elevado('si')) push('Contaminación','Silicio elevado','Contaminación por partículas de suciedad/polvo ingresando al sistema.','Revisar sellos, respiraderos y prácticas de llenado.');
+    if(elevado('agua') && elevado('fe')) push('Corrosión','Agua y Hierro elevados simultáneamente','Corrosión acelerada por presencia de agua en el lubricante.','Revisar sellos y respiraderos; verificar condiciones de almacenamiento y manejo del producto.');
+    if(elevado('oxidacion') && elevado('viscosidad')) push('Degradación lubricante','Oxidación y Viscosidad elevadas simultáneamente','Degradación térmica del lubricante por sobrecalentamiento u oxidación avanzada.','Evaluar temperatura de operación y ciclo de cambio de aceite; considerar cambio de producto.');
+    if(elevado('na') && elevado('k')) push('Refrigerante','Sodio y Potasio elevados simultáneamente','Posible ingreso de refrigerante al sistema lubricado.','Inspeccionar sellos de camisas, empaques de culata y sistema de enfriamiento.');
+    if(elevado('combustible') && bajo('viscosidad')) push('Combustible','Dilución por combustible con caída de viscosidad','Dilución del lubricante por combustible sin quemar.','Revisar sistema de inyección y tiempos de combustión; verificar ciclos de trabajo del motor.');
+    if(elevado('pq') && elevado('fe')) push('Desgaste abrasivo','Índice PQ y Hierro elevados','Presencia de partículas ferrosas grandes, indicativo de desgaste severo en progreso.','Priorizar inspección física del componente; posible falla mecánica en curso.');
+    if(elevado('cu') && elevado('pb')) push('Desgaste adhesivo','Cobre y Plomo elevados simultáneamente','Desgaste de superficies de cojinetes/bujes (metal antifricción).','Revisar holguras y lubricación de cojinetes; verificar presión de aceite.');
+    if(elevado('cr')) push('Fatiga','Cromo elevado','Posible desgaste por fatiga en componentes cromados (anillos, camisas, rodamientos).','Inspeccionar componentes cromados; evaluar ciclos de carga.');
+    return hallazgos;
+  }
+
+  /* ---------- Modelo de condición (memoizado) ---------- */
+  let ccModel = null;
+  let ccActiveSub = 'resumen';
+
+  function ccBuildModel(ds){
+    if(!ds.length) return null;
+    const watchedKeys = ccResolveWatchedKeys(ds);
+    const limits = ccEstimateLimits(ds, watchedKeys);
+    const comps = calcComponentesBase(ds);
+    const byKey = new Map();
+    const mecanismoCounts = new Map();
+    const paramFailCounts = new Map();
+    const equipoFailCounts = new Map();
+    const flotaFailCounts = new Map();
+    const allWatchedKeys = CC_WATCHED.map(w=>w.key).concat([CC_ISO_KEY]);
+
+    comps.forEach(c=>{
+      const forecasts={}, alertPredictions=[], anomalies=[];
+      allWatchedKeys.forEach(ck=>{
+        const wLabel = ck===CC_ISO_KEY ? 'Código ISO' : CC_WATCHED.find(w=>w.key===ck).label;
+        const serie = ccSeriesForComponent(c, ck, watchedKeys);
+        if(serie.length<2) return;
+        ccDetectAnomalies(serie, wLabel).forEach(a=>anomalies.push(a));
+        const fc = ccForecastFromSeries(serie);
+        if(fc){
+          forecasts[ck] = {...fc, label:wLabel};
+          const lim = limits[ck];
+          if(lim){
+            const pred = ccDiasHastaLimite(fc, lim);
+            if(pred) alertPredictions.push({key:ck, label:wLabel, ...pred});
+          }
+        }
+      });
+      const anomaliasRecientes = anomalies.filter(a=>c.ult.fecha && a.fecha && a.fecha.getTime()===c.ult.fecha.getTime());
+      const health = ccHealthIndex(c, anomaliasRecientes);
+      const diagnosis = ccDiagnoseComponent(c, watchedKeys);
+      diagnosis.forEach(h=>{
+        mecanismoCounts.set(h.mecanismo,(mecanismoCounts.get(h.mecanismo)||0)+1);
+        equipoFailCounts.set(c.equipo,(equipoFailCounts.get(c.equipo)||0)+1);
+        flotaFailCounts.set(c.tipoEquipo,(flotaFailCounts.get(c.tipoEquipo)||0)+1);
+      });
+      (c.ult.flags||[]).forEach(f=>{
+        const lbl=cleanParam(f.param);
+        paramFailCounts.set(lbl,(paramFailCounts.get(lbl)||0)+1);
+      });
+      const nAl=(c.ult.flags||[]).filter(f=>f.st==='alerta').length;
+      const nPr=(c.ult.flags||[]).filter(f=>f.st==='precaucion').length;
+      const riskScore = Math.round(nAl*5 + nPr*2 + anomaliasRecientes.length*3 + (100-health.score)*0.3 + (c.tend==='Deteriorando'?10:0));
+      const key = (c.equipo||'?')+'||'+(c.componente||'?');
+      byKey.set(key, {c, key, health, anomalies, forecasts, alertPredictions, diagnosis, riskScore});
+    });
+
+    const all = [...byKey.values()];
+    const topRisk = [...all].sort((a,b)=>b.riskScore-a.riskScore || a.health.score-b.health.score).slice(0,20);
+
+    // Fleet Intelligence: agrupado por TIPO_EQUIPO
+    const flotaMap = new Map();
+    all.forEach(r=>{
+      const t = r.c.tipoEquipo || '(Sin tipo)';
+      if(!flotaMap.has(t)) flotaMap.set(t, []);
+      flotaMap.get(t).push(r);
+    });
+    const ultimoValor = (r, ck) => { const s=ccSeriesForComponent(r.c, ck, watchedKeys); return s.length ? s[s.length-1].valor : null; };
+    const fleets = [...flotaMap.entries()].map(([tipoEquipo, rs])=>({
+      tipoEquipo, n:rs.length,
+      healthAvg: Math.round(avg(rs.map(r=>r.health.score))),
+      feAvg: avg(rs.map(r=>ultimoValor(r,'fe')).filter(v=>v!==null)),
+      cuAvg: avg(rs.map(r=>ultimoValor(r,'cu')).filter(v=>v!==null)),
+      siAvg: avg(rs.map(r=>ultimoValor(r,'si')).filter(v=>v!==null)),
+      aguaAvg: avg(rs.map(r=>ultimoValor(r,'agua')).filter(v=>v!==null)),
+      pqAvg: avg(rs.map(r=>ultimoValor(r,'pq')).filter(v=>v!==null)),
+      isoAvg: avg(rs.map(r=>ultimoValor(r,CC_ISO_KEY)).filter(v=>v!==null))
+    })).sort((a,b)=>a.healthAvg-b.healthAvg);
+
+    // Correlación automática (Pearson, con todo el dataset)
+    function pearson(xs,ys){
+      const n=xs.length; if(n<3) return null;
+      const mx=avg(xs), my=avg(ys);
+      let sxy=0,sxx=0,syy=0;
+      for(let i=0;i<n;i++){ const dx=xs[i]-mx, dy=ys[i]-my; sxy+=dx*dy; sxx+=dx*dx; syy+=dy*dy; }
+      if(sxx===0||syy===0) return null;
+      return sxy/Math.sqrt(sxx*syy);
+    }
+    function nivelRel(r){
+      const a=Math.abs(r);
+      if(a>=0.7) return 'Muy fuerte'; if(a>=0.5) return 'Fuerte'; if(a>=0.3) return 'Moderada'; if(a>=0.1) return 'Débil'; return 'Muy débil / nula';
+    }
+    function ccPairVal(d, k){ return k==='horas' ? parseFloat(d.edadComponente) : (k===CC_ISO_KEY ? isoLevel(d.iso) : ccVal(d, watchedKeys[k])); }
+    const pairDefs = [['fe','si','Fe vs Si'],['fe','agua','Fe vs Agua'],['cu','fe','Cu vs Fe'],['pq','fe','PQ vs Fe'],
+      ['oxidacion','viscosidad','Oxidación vs Viscosidad'],['bn','an','BN vs AN'],['horas','fe','Horas vs Fe']];
+    const correlations = pairDefs.map(([k1,k2,label])=>{
+      const xs=[],ys=[];
+      ds.forEach(d=>{
+        const v1=ccPairVal(d,k1), v2=ccPairVal(d,k2);
+        if(v1!==null && v2!==null && !isNaN(v1) && !isNaN(v2)){ xs.push(v1); ys.push(v2); }
+      });
+      const r = pearson(xs,ys);
+      if(r===null) return null;
+      const signo = r>=0 ? 'positiva' : 'negativa';
+      return {label, r:Math.round(r*1000)/1000, n:xs.length, nivel:nivelRel(r),
+        interpretacion:`Correlación ${nivelRel(r).toLowerCase()} ${signo} (r=${r.toFixed(2)}, n=${xs.length}).`};
+    }).filter(Boolean).sort((a,b)=>Math.abs(b.r)-Math.abs(a.r));
+
+    // Pareto (fallas / parámetros / equipos / flotas)
+    function pareto(map, topN){
+      const arr=[...map.entries()].map(([label,count])=>({label,count})).sort((a,b)=>b.count-a.count).slice(0,topN||15);
+      const total=arr.reduce((a,x)=>a+x.count,0);
+      let acc=0;
+      return arr.map(x=>{ acc+=x.count; return {...x, pct: total?Math.round(x.count/total*1000)/10:0, cumPct: total?Math.round(acc/total*1000)/10:0}; });
+    }
+    const paretoFallas = pareto(mecanismoCounts, 8);
+    const paretoParametros = pareto(paramFailCounts, 15);
+    const paretoEquipos = pareto(equipoFailCounts, 15);
+    const paretoFlotas = pareto(flotaFailCounts, 10);
+
+    // Heatmap avanzado: equipos × parámetros clave (peor muestra más reciente por equipo)
+    const HEAT_KEYS = ['fe','cu','si','agua','pq',CC_ISO_KEY,'bn','an','oxidacion'];
+    const equipoMap = new Map();
+    all.forEach(r=>{
+      const eq=r.c.equipo||'(Sin equipo)';
+      if(!equipoMap.has(eq)) equipoMap.set(eq, []);
+      equipoMap.get(eq).push(r);
+    });
+    const heatmap = [...equipoMap.entries()].map(([equipo, rs])=>{
+      const cells = HEAT_KEYS.map(ck=>{
+        let best=null;
+        rs.forEach(r=>{
+          const serie = ccSeriesForComponent(r.c, ck, watchedKeys);
+          if(serie.length){
+            const last=serie[serie.length-1];
+            if(!best || (last.fecha && best.fecha && last.fecha>best.fecha)) best=last;
+          }
+        });
+        return best ? {valor:best.valor, estado:best.estado} : null;
+      });
+      return {equipo, cliente:rs[0].c.cliente, cells, peorScore:Math.min(...rs.map(r=>r.health.score))};
+    }).sort((a,b)=>a.peorScore-b.peorScore);
+
+    const totals = {
+      muestras: ds.length,
+      alertas: ds.filter(d=>d.status==='alerta').length,
+      precauciones: ds.filter(d=>d.status==='precaucion').length,
+      anomalias: all.reduce((a,r)=>a+r.anomalies.length,0),
+      healthAvg: Math.round(avg(all.map(r=>r.health.score))),
+      equiposCriticos: all.filter(r=>r.health.score<70).length
+    };
+
+    return {byKey, watchedKeys, limits, topRisk, fleets, correlations,
+      paretoFallas, paretoParametros, paretoEquipos, paretoFlotas, heatmap, heatKeys:HEAT_KEYS, totals, all};
+  }
+
+  function ccHealthFor(equipo, componente){
+    if(!ccModel) return null;
+    const r = ccModel.byKey.get((equipo||'?')+'||'+(componente||'?'));
+    return r ? r.health : null;
+  }
+  function ccOpenComponent(key){
+    const r = ccModel && ccModel.byKey.get(key);
+    if(r) openCompDrawer(r.c);
+  }
+
+  /* ---------- Render: Resumen ejecutivo ---------- */
+  function ccTopTableHTML(rows){
+    if(!rows.length) return '<tbody><tr><td class="grid-empty">Sin activos críticos.</td></tr></tbody>';
+    return '<thead><tr><th>Equipo</th><th>Componente</th><th>Estado</th><th>Health Index</th><th>Tendencia</th><th>Riesgo</th></tr></thead><tbody>'+
+      rows.map(r=>`<tr data-key="${esc(r.key)}" style="cursor:pointer;">
+        <td class="mono">${esc(r.c.equipo)}</td><td class="mono">${esc(r.c.componente)}</td>
+        <td>${pillEstado(r.c.ult.status)}</td>
+        <td><span class="cc-health-badge ${r.health.cls}">${r.health.score}</span></td>
+        <td>${tendIco(r.c.tend)}</td>
+        <td><b>${r.riskScore}</b></td>
+      </tr>`).join('')+'</tbody>';
+  }
+  function ccRenderResumen(){
+    const box = $('ccResumenBox');
+    if(!ccModel){ box.innerHTML = '<div class="dash-empty"><h3 class="display">Sin datos cargados</h3><p>Ve a la pestaña Plantilla Semáforo o Dashboard y carga tus datos para activar el Condition Center.</p></div>'; return; }
+    const t = ccModel.totals;
+    box.innerHTML = `
+      <div class="kpis">
+        <div class="kpi total"><div class="bar"></div><div class="num">${t.muestras}</div><div class="lbl">Muestras totales</div></div>
+        <div class="kpi alerta"><div class="bar"></div><div class="num">${t.alertas}</div><div class="lbl">Alertas</div></div>
+        <div class="kpi precaucion"><div class="bar"></div><div class="num">${t.precauciones}</div><div class="lbl">Precauciones</div></div>
+        <div class="kpi total"><div class="bar"></div><div class="num">${t.anomalias}</div><div class="lbl">Anomalías detectadas</div></div>
+        <div class="kpi total"><div class="bar"></div><div class="num">${t.healthAvg}</div><div class="lbl">Health Index promedio</div></div>
+        <div class="kpi alerta"><div class="bar"></div><div class="num">${t.equiposCriticos}</div><div class="lbl">Equipos críticos (&lt;70)</div></div>
+      </div>
+      <div class="chart-card" style="margin-top:16px;">
+        <div class="card-head"><div class="grow"><h4>Top 20 activos críticos</h4><p class="sub">Ordenados por puntaje de riesgo — ver "Ranking predictivo" para el detalle del cálculo</p></div></div>
+        <div style="overflow:auto;"><table class="dash-tbl" id="ccTopTbl"></table></div>
+      </div>`;
+    $('ccTopTbl').innerHTML = ccTopTableHTML(ccModel.topRisk);
+    $('ccTopTbl').querySelectorAll('tbody tr[data-key]').forEach(tr=>tr.addEventListener('click', ()=>ccOpenComponent(tr.dataset.key)));
+  }
+
+  /* ---------- Render: Health Index (lista completa) ---------- */
+  const gridCcHealth = createGrid('tblCcHealth', 'ccGridHealth_v1');
+  function ccRenderHealth(){
+    if(!ccModel){ $('ccHealthEmpty').style.display='block'; $('ccHealthBox').style.display='none'; return; }
+    $('ccHealthEmpty').style.display='none'; $('ccHealthBox').style.display='block';
+    const rows = ccModel.all;
+    gridCcHealth.setCols([
+      {key:'cliente', label:'Cliente', w:150, text:r=>r.c.cliente},
+      {key:'equipo', label:'Equipo', w:120, mono:true, text:r=>r.c.equipo},
+      {key:'componente', label:'Componente', w:150, mono:true, text:r=>r.c.componente},
+      {key:'tipoEquipo', label:'Tipo de equipo', w:130, text:r=>r.c.tipoEquipo},
+      {key:'estado', label:'Estado', w:110, text:r=>r.c.ult.status==='alerta'?'Alerta':r.c.ult.status==='precaucion'?'Precaución':'Normal', html:r=>pillEstado(r.c.ult.status), sortVal:r=>RANK[r.c.ult.status]||0},
+      {key:'tendencia', label:'Tendencia', w:130, text:r=>r.c.tend, html:r=>tendIco(r.c.tend), sortVal:r=>TRANK[r.c.tend]||0},
+      {key:'health', label:'Health Index', w:120, num:true, text:r=>r.health.score, html:r=>`<span class="cc-health-badge ${r.health.cls}">${r.health.score}</span>`, sortVal:r=>r.health.score},
+      {key:'riesgo', label:'Riesgo', w:90, num:true, text:r=>r.riskScore}
+    ]);
+    gridCcHealth.setRows(rows);
+    gridCcHealth.setSearchCols(['cliente','equipo','componente','tipoEquipo']);
+    gridCcHealth.setRowClick(r=>openCompDrawer(r.c));
+    const vis = gridCcHealth.render();
+    $('ccHealthCount').textContent = vis.length+' de '+rows.length+' componentes';
+  }
+
+  /* ---------- Render: Anomalías ---------- */
+  const gridCcAnom = createGrid('tblCcAnomalias', 'ccGridAnom_v1');
+  function ccRenderAnomalias(){
+    if(!ccModel){ $('ccAnomEmpty').style.display='block'; $('ccAnomBox').style.display='none'; return; }
+    $('ccAnomEmpty').style.display='none'; $('ccAnomBox').style.display='block';
+    const rows=[];
+    ccModel.all.forEach(r=>r.anomalies.forEach(a=>rows.push({...a, equipo:r.c.equipo, componente:r.c.componente, cliente:r.c.cliente, key:r.key})));
+    rows.sort((a,b)=>(b.fecha?b.fecha.getTime():0)-(a.fecha?a.fecha.getTime():0));
+    gridCcAnom.setCols([
+      {key:'fecha', label:'Fecha', w:110, mono:true, text:a=>fmtDate(a.fecha), sortVal:a=>a.fecha?a.fecha.getTime():0},
+      {key:'cliente', label:'Cliente', w:150, text:a=>a.cliente},
+      {key:'equipo', label:'Equipo', w:110, mono:true, text:a=>a.equipo},
+      {key:'componente', label:'Componente', w:140, mono:true, text:a=>a.componente},
+      {key:'param', label:'Parámetro', w:150, text:a=>a.param},
+      {key:'tipo', label:'Tipo', w:150, text:a=>a.tipo, html:a=>`<span class="${a.tipo==='Salto brusco'?'pill-r':'pill-y'}">${esc(a.tipo)}</span>`},
+      {key:'valorPrevio', label:'Valor anterior', w:110, num:true, text:a=>fmtNum(a.valorPrevio)},
+      {key:'valor', label:'Valor actual', w:110, num:true, text:a=>fmtNum(a.valor)},
+      {key:'cambioPct', label:'Cambio %', w:100, num:true, text:a=>a.cambioPct!==null?(a.cambioPct>0?'+':'')+Math.round(a.cambioPct)+'%':'—', sortVal:a=>a.cambioPct??0}
+    ]);
+    gridCcAnom.setRows(rows);
+    gridCcAnom.setSearchCols(['cliente','equipo','componente','param']);
+    gridCcAnom.setRowClick(a=>ccOpenComponent(a.key));
+    const vis = gridCcAnom.render();
+    $('ccAnomCount').textContent = vis.length+' de '+rows.length+' anomalía(s)';
+  }
+
+  /* ---------- Render: Forecast & Predicción de alerta ---------- */
+  function ccPopulateForecastSelect(){
+    const sel=$('ccForecastComp');
+    if(!ccModel){ sel.innerHTML=''; return; }
+    const opts=[...ccModel.byKey.values()].sort((a,b)=>(a.c.equipo+a.c.componente).localeCompare(b.c.equipo+b.c.componente,'es'));
+    sel.innerHTML = '<option value="">— Selecciona un componente —</option>'+
+      opts.map(r=>`<option value="${esc(r.key)}">${esc(r.c.equipo)} · ${esc(r.c.componente)} (${esc(r.c.cliente)})</option>`).join('');
+  }
+  function ccRenderForecast(){
+    ccPopulateForecastSelect();
+    $('ccForecastDetail').innerHTML = ccModel ? '<p class="an-note">Selecciona un componente para ver su forecast y predicción de alerta.</p>' : '';
+  }
+  function ccShowForecastForComponent(key){
+    const r = ccModel && ccModel.byKey.get(key);
+    const box=$('ccForecastDetail');
+    if(!r){ box.innerHTML=''; return; }
+    const rows = CC_WATCHED.concat([{key:CC_ISO_KEY,label:'Código ISO'}]).map(w=>{
+      const fc=r.forecasts[w.key];
+      const pred=r.alertPredictions.find(p=>p.key===w.key);
+      if(!fc) return `<tr><td>${esc(w.label)}</td><td colspan="5" style="color:var(--ink-faint);">Datos insuficientes para proyectar</td></tr>`;
+      const tendTxt = fc.slope>0 ? '↗ Subiendo' : fc.slope<0 ? '↘ Bajando' : '→ Estable';
+      return `<tr>
+        <td>${esc(w.label)}</td>
+        <td class="mono">${fmtNum(fc.lastValue)}</td>
+        <td>${tendTxt}</td>
+        <td class="mono">${fc.r2.toFixed(2)}</td>
+        <td class="mono">${fmtNum(fc.nextValue)}</td>
+        <td>${pred ? (pred.yaCruzado ? '<span class="pill-r">Ya cruzó el límite</span>' : '<span class="pill-y">'+pred.dias+' día(s) · '+fmtDate(pred.fecha)+'</span>') : '<span style="color:var(--ink-faint);">—</span>'}</td>
+      </tr>`;
+    }).join('');
+    box.innerHTML = `
+      <div class="det-meta" style="margin-bottom:14px;">
+        <div><span>Equipo</span><b>${esc(r.c.equipo)}</b></div>
+        <div><span>Componente</span><b>${esc(r.c.componente)}</b></div>
+        <div><span>Health Index</span><b><span class="cc-health-badge ${r.health.cls}">${r.health.score}</span></b></div>
+      </div>
+      <div style="overflow:auto;"><table class="dash-tbl">
+        <thead><tr><th>Parámetro</th><th>Último valor</th><th>Tendencia</th><th>R²</th><th>Forecast siguiente muestra</th><th>Predicción de alerta</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+  }
+
+  /* ---------- Render: Fleet Intelligence ---------- */
+  let ccChartFleetHealth=null, ccChartFleetParams=null;
+  function ccRenderFleet(){
+    if(!ccModel){ $('ccFleetBox').innerHTML=''; return; }
+    const fleets = ccModel.fleets;
+    $('ccFleetBox').innerHTML = `
+      <div style="overflow:auto;margin-bottom:16px;"><table class="dash-tbl">
+        <thead><tr><th>Tipo de equipo</th><th>N° componentes</th><th>Health Index</th><th>Fe prom.</th><th>Cu prom.</th><th>Si prom.</th><th>Agua prom.</th><th>PQ prom.</th><th>ISO prom.</th></tr></thead>
+        <tbody>${fleets.map(f=>`<tr>
+          <td>${esc(f.tipoEquipo)}</td><td class="mono">${f.n}</td>
+          <td><span class="cc-health-badge ${ccHealthColor(f.healthAvg).cls}">${f.healthAvg}</span></td>
+          <td class="mono">${fmtNum(f.feAvg)}</td><td class="mono">${fmtNum(f.cuAvg)}</td><td class="mono">${fmtNum(f.siAvg)}</td>
+          <td class="mono">${fmtNum(f.aguaAvg)}</td><td class="mono">${fmtNum(f.pqAvg)}</td><td class="mono">${fmtNum(f.isoAvg)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+      <div class="dash-grid-2">
+        <div class="chart-card"><div class="card-head"><div class="grow"><h4>Health Index por tipo de equipo</h4><p class="sub">Promedio, de peor a mejor</p></div></div><div class="chart-box"><canvas id="ccChFleetHealth"></canvas></div></div>
+        <div class="chart-card"><div class="card-head"><div class="grow"><h4>Elementos de desgaste por flota</h4><p class="sub">Fe / Cu / Si promedio (último valor por componente)</p></div></div><div class="chart-box"><canvas id="ccChFleetParams"></canvas></div></div>
+      </div>`;
+    if(ccChartFleetHealth) ccChartFleetHealth.destroy();
+    ccChartFleetHealth = new Chart($('ccChFleetHealth'), {
+      type:'bar',
+      data:{labels:fleets.map(f=>f.tipoEquipo), datasets:[{label:'Health Index', data:fleets.map(f=>f.healthAvg), backgroundColor:fleets.map(f=>ccHealthColor(f.healthAvg).color), borderRadius:3}]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{min:0,max:100}}}
+    });
+    if(ccChartFleetParams) ccChartFleetParams.destroy();
+    ccChartFleetParams = new Chart($('ccChFleetParams'), {
+      type:'bar',
+      data:{labels:fleets.map(f=>f.tipoEquipo), datasets:[
+        {label:'Fe', data:fleets.map(f=>f.feAvg), backgroundColor:'#b5451f'},
+        {label:'Cu', data:fleets.map(f=>f.cuAvg), backgroundColor:'#c98a3b'},
+        {label:'Si', data:fleets.map(f=>f.siAvg), backgroundColor:'#4a6fa0'}
+      ]},
+      options:{responsive:true, maintainAspectRatio:false}
+    });
+  }
+
+  /* ---------- Render: Heatmap avanzado ---------- */
+  const CC_HEAT_LABELS = {fe:'Fe',cu:'Cu',si:'Si',agua:'Agua',pq:'PQ',__iso:'ISO',bn:'BN',an:'AN',oxidacion:'Oxid.'};
+  function ccRenderHeatmap(){
+    const box=$('ccHeatBox');
+    if(!ccModel){ box.innerHTML=''; return; }
+    const keys = ccModel.heatKeys;
+    let html = '<div style="overflow:auto;"><table class="heat-tbl"><thead><tr><th class="rowh">Equipo</th>'+
+      keys.map(k=>`<th>${esc(CC_HEAT_LABELS[k]||k)}</th>`).join('')+'</tr></thead><tbody>';
+    ccModel.heatmap.slice(0,200).forEach(row=>{
+      html += `<tr><th class="rowh" title="${esc(row.cliente)}">${esc(row.equipo)}</th>`;
+      row.cells.forEach(cell=>{
+        if(!cell){ html+='<td class="heat-cell" style="background:var(--bg-alt);color:var(--ink-faint);">·</td>'; return; }
+        const bg = cell.estado==='alerta'?'#f9dad7':cell.estado==='precaucion'?'#faecc4':cell.estado==='normal'?'#e2f5ea':'#eef1f4';
+        const fg = cell.estado==='alerta'?'#8a2420':cell.estado==='precaucion'?'#79530a':cell.estado==='normal'?'#166b46':'#6b7684';
+        html += `<td class="heat-cell" style="background:${bg};color:${fg};">${fmtNum(cell.valor)}</td>`;
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    if(ccModel.heatmap.length>200) html += `<p class="hint" style="margin-top:8px;color:var(--ink-faint);font-size:12px;">Mostrando 200 de ${ccModel.heatmap.length} equipos (los de peor condición primero).</p>`;
+    box.innerHTML = html;
+  }
+
+  /* ---------- Render: Correlación automática ---------- */
+  function ccRenderCorrelacion(){
+    const box=$('ccCorrBox');
+    if(!ccModel){ box.innerHTML=''; return; }
+    const rows = ccModel.correlations;
+    box.innerHTML = `<div style="overflow:auto;"><table class="dash-tbl">
+      <thead><tr><th>Variable 1</th><th>Variable 2</th><th>r</th><th>Nivel de relación</th><th>N</th><th>Interpretación</th></tr></thead>
+      <tbody>${rows.length ? rows.map(r=>{
+        const [v1,v2]=r.label.split(' vs ');
+        return `<tr><td>${esc(v1)}</td><td>${esc(v2)}</td><td class="mono"><b>${r.r}</b></td><td>${esc(r.nivel)}</td><td class="mono">${r.n}</td><td>${esc(r.interpretacion)}</td></tr>`;
+      }).join('') : '<tr><td colspan="6" class="grid-empty">Datos insuficientes.</td></tr>'}</tbody>
+    </table></div>`;
+  }
+
+  /* ---------- Render: Diagnóstico automático / Failure Mechanism ---------- */
+  function ccRenderDiagnostico(){
+    const box=$('ccDiagBox');
+    if(!ccModel){ box.innerHTML=''; return; }
+    const withDiag = ccModel.all.filter(r=>r.diagnosis.length).sort((a,b)=>b.riskScore-a.riskScore).slice(0,60);
+    box.innerHTML = withDiag.length ? withDiag.map(r=>`
+      <div class="hist-card ${r.c.ult.status}" style="margin-bottom:10px;cursor:pointer;" data-key="${esc(r.key)}">
+        <div class="hist-head"><span class="dt"><b>${esc(r.c.equipo)}</b> · ${esc(r.c.componente)} · ${esc(r.c.cliente)}</span>${pillEstado(r.c.ult.status)}</div>
+        ${r.diagnosis.map(h=>`<div class="hist-com"><b>${esc(h.mecanismo)} — ${esc(h.hallazgo)}</b>${esc(h.diagnostico)}<br><i>Recomendación: ${esc(h.recomendacion)}</i></div>`).join('')}
+      </div>`).join('') : '<div class="an-empty">No se detectaron hallazgos de diagnóstico automático con los datos actuales.</div>';
+    box.querySelectorAll('[data-key]').forEach(el=>el.addEventListener('click', ()=>ccOpenComponent(el.dataset.key)));
+  }
+
+  /* ---------- Render: Pareto ejecutivo ---------- */
+  const ccParetoCharts={};
+  function ccBuildParetoChart(canvasId, data, color){
+    if(ccParetoCharts[canvasId]) ccParetoCharts[canvasId].destroy();
+    ccParetoCharts[canvasId] = new Chart($(canvasId), {
+      data:{labels:data.map(d=>d.label),
+        datasets:[
+          {type:'bar', label:'Cantidad', data:data.map(d=>d.count), backgroundColor:color, order:2, borderRadius:3},
+          {type:'line', label:'% acumulado', data:data.map(d=>d.cumPct), yAxisID:'y1', borderColor:'#794511', backgroundColor:'#794511', order:1, tension:.2}
+        ]},
+      options:{responsive:true, maintainAspectRatio:false,
+        scales:{ y:{beginAtZero:true}, y1:{position:'right', min:0, max:100, grid:{drawOnChartArea:false}, ticks:{callback:v=>v+'%'}} }}
+    });
+  }
+  function ccRenderPareto(){
+    if(!ccModel) return;
+    ccBuildParetoChart('ccChParetoFallas', ccModel.paretoFallas, '#b5451f');
+    ccBuildParetoChart('ccChParetoParams', ccModel.paretoParametros, '#c98a3b');
+    ccBuildParetoChart('ccChParetoEquipos', ccModel.paretoEquipos, '#4a6fa0');
+    ccBuildParetoChart('ccChParetoFlotas', ccModel.paretoFlotas, '#7c5a8a');
+  }
+
+  /* ---------- Render: Ranking predictivo ---------- */
+  function ccRenderRanking(){
+    const box=$('ccRankBox');
+    if(!ccModel){ box.innerHTML=''; return; }
+    const rows = ccModel.topRisk;
+    box.innerHTML = `<div style="overflow:auto;"><table class="dash-tbl">
+      <thead><tr><th>#</th><th>Equipo</th><th>Componente</th><th>Alertas×5</th><th>Precauc.×2</th><th>Anomalías×3</th><th>Health (pond.)</th><th>Tendencia</th><th>Puntaje</th></tr></thead>
+      <tbody>${rows.length ? rows.map((r,i)=>{
+        const nAl=(r.c.ult.flags||[]).filter(f=>f.st==='alerta').length;
+        const nPr=(r.c.ult.flags||[]).filter(f=>f.st==='precaucion').length;
+        const nAnom = r.anomalies.filter(a=>r.c.ult.fecha && a.fecha && a.fecha.getTime()===r.c.ult.fecha.getTime()).length;
+        return `<tr style="cursor:pointer;" data-key="${esc(r.key)}">
+          <td>${i+1}</td><td class="mono">${esc(r.c.equipo)}</td><td class="mono">${esc(r.c.componente)}</td>
+          <td class="mono">${nAl*5}</td><td class="mono">${nPr*2}</td><td class="mono">${nAnom*3}</td>
+          <td class="mono">${Math.round((100-r.health.score)*0.3)}</td>
+          <td class="mono">${r.c.tend==='Deteriorando'?10:0}</td>
+          <td><b>${r.riskScore}</b></td>
+        </tr>`;
+      }).join('') : '<tr><td colspan="9" class="grid-empty">Sin riesgos detectados.</td></tr>'}</tbody>
+    </table></div>`;
+    box.querySelectorAll('[data-key]').forEach(el=>el.addEventListener('click', ()=>ccOpenComponent(el.dataset.key)));
+  }
+
+  /* ---------- Orquestación de sub-pestañas ---------- */
+  const CC_RENDERERS = {resumen:ccRenderResumen, health:ccRenderHealth, anomalias:ccRenderAnomalias, forecast:ccRenderForecast,
+    fleet:ccRenderFleet, heatmap:ccRenderHeatmap, correlacion:ccRenderCorrelacion, diagnostico:ccRenderDiagnostico,
+    pareto:ccRenderPareto, ranking:ccRenderRanking};
+  const ccRenderedSubs = new Set();
+  function ccShowSub(sub){
+    ccActiveSub = sub;
+    document.querySelectorAll('#view-condition .cc-subnav button').forEach(b=>b.classList.toggle('active', b.dataset.cc===sub));
+    document.querySelectorAll('#view-condition .cc-sub').forEach(s=>s.classList.toggle('active', s.id==='ccSub-'+sub));
+    if(!ccRenderedSubs.has(sub)){ ccRenderedSubs.add(sub); CC_RENDERERS[sub](); }
+    setTimeout(resizeAllCharts, 30);
+  }
+  document.querySelectorAll('#view-condition .cc-subnav button').forEach(b=>b.addEventListener('click', ()=>ccShowSub(b.dataset.cc)));
+  $('ccForecastComp').addEventListener('change', e=>ccShowForecastForComponent(e.target.value));
+  document.querySelector('[data-view="condition"]').addEventListener('click', ()=>{
+    setTimeout(()=>{ if(!ccRenderedSubs.has(ccActiveSub)){ ccRenderedSubs.add(ccActiveSub); CC_RENDERERS[ccActiveSub](); } resizeAllCharts(); }, 30);
+  });
+
+  // Se recalcula el modelo de condición en el mismo punto donde ya se
+  // refrescan Historial/Analytic/KPIs cada vez que cambia el dataset
+  // (rebuildDataset, cargarDesdeNube y "Limpiar" comparten esta llamada).
+  const _ccOrigRefreshHistorial = refreshHistorial;
+  refreshHistorial = function(){
+    ccModel = dataset.length ? ccBuildModel(dataset) : null;
+    ccRenderedSubs.clear();
+    _ccOrigRefreshHistorial();
+    if(document.getElementById('view-condition').classList.contains('active')){
+      CC_RENDERERS[ccActiveSub]();
+      ccRenderedSubs.add(ccActiveSub);
+    }else{
+      ccRenderResumen();
+      ccRenderedSubs.add('resumen');
+    }
+  };
+
+  /* ---------- Health Index en Dashboard / Historial / Analytics ---------- */
+  COMP_PINNED_RIGHT.push({key:'health', label:'Health Index', w:110, num:true,
+    text:c=>{ const h=ccHealthFor(c.equipo,c.componente); return h?h.score:''; },
+    html:c=>{ const h=ccHealthFor(c.equipo,c.componente); return h?`<span class="cc-health-badge ${h.cls}">${h.score}</span>`:'—'; },
+    sortVal:c=>{ const h=ccHealthFor(c.equipo,c.componente); return h?h.score:-1; }});
+
+  CRIT_CONFIG_FIELDS.push({key:'healthCrit', label:'Health Index', w:110, num:true,
+    text:d=>{ const h=ccHealthFor(d.equipo,d.componente); return h?h.score:''; },
+    html:d=>{ const h=ccHealthFor(d.equipo,d.componente); return h?`<span class="cc-health-badge ${h.cls}">${h.score}</span>`:'—'; },
+    sortVal:d=>{ const h=ccHealthFor(d.equipo,d.componente); return h?h.score:-1; }});
+
+  HIST_COLS.push({key:'health', label:'Health Index', w:110,
+    text:c=>{ const h=ccHealthFor(c.equipo,c.componente); return h?h.score:''; },
+    html:c=>{ const h=ccHealthFor(c.equipo,c.componente); return h?`<span class="cc-health-badge ${h.cls}">${h.score}</span>`:'—'; },
+    sortVal:c=>{ const h=ccHealthFor(c.equipo,c.componente); return h?h.score:-1; }});
+  HIST_DEFAULT.push('health');
+
+  AN_DERIVED.push({key:'__healthIndex', label:'Health Index'});
+  const _ccOrigAnNumVal = anNumVal;
+  anNumVal = function(d, key){
+    if(key==='__healthIndex'){ const h=ccHealthFor(d.equipo,d.componente); return h?h.score:null; }
+    return _ccOrigAnNumVal(d, key);
+  };
+
+  /* ---------- Reporte automático (resumen ejecutivo dentro de "Historial") ---------- */
+  function ccResumenEjecutivoHTML(r){
+    const hallazgos = r.diagnosis.length ? r.diagnosis.map(h=>'<li>'+esc(h.hallazgo)+' → <b>'+esc(h.mecanismo)+'</b></li>').join('') : '<li>Sin hallazgos automáticos relevantes.</li>';
+    const tendencias = CC_WATCHED.filter(w=>r.forecasts[w.key]).map(w=>{
+      const fc=r.forecasts[w.key];
+      const ic = fc.slope>0?'↗':fc.slope<0?'↘':'→';
+      return `<li>${esc(w.label)}: ${ic} (R²=${fc.r2.toFixed(2)}) — próximo valor estimado ${fmtNum(fc.nextValue)}</li>`;
+    }).join('') || '<li>Historial insuficiente para proyectar tendencias.</li>';
+    const rank = ccModel.topRisk.findIndex(x=>x.key===r.key);
+    const recomendaciones = r.diagnosis.length ? [...new Set(r.diagnosis.map(h=>h.recomendacion))].map(x=>'<li>'+esc(x)+'</li>').join('')
+      : (r.health.score<70 ? '<li>Programar seguimiento cercano y adelantar la próxima muestra.</li>' : '<li>Mantener la frecuencia de muestreo habitual.</li>');
+    return `
+      <div class="rep-sect-title"><span class="tag" style="background:${r.health.color};">★</span> Resumen ejecutivo (Condition Center)</div>
+      <div class="chart-card" style="margin-bottom:18px;">
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+          <span class="cc-health-badge ${r.health.cls}" style="font-size:22px;padding:10px 18px;">Health Index ${r.health.score}</span>
+          <span>Riesgo: <b>${r.riskScore}</b>${rank>=0?' · #'+(rank+1)+' en el ranking predictivo':''}</span>
+        </div>
+        <div class="dash-grid-2" style="gap:14px;">
+          <div><b>Hallazgos</b><ul style="margin:6px 0 0;padding-left:18px;font-size:12.5px;">${hallazgos}</ul></div>
+          <div><b>Tendencias</b><ul style="margin:6px 0 0;padding-left:18px;font-size:12.5px;">${tendencias}</ul></div>
+          <div><b>Diagnóstico</b><ul style="margin:6px 0 0;padding-left:18px;font-size:12.5px;">${r.diagnosis.length?r.diagnosis.map(h=>'<li>'+esc(h.diagnostico)+'</li>').join(''):'<li>Sin diagnóstico automático activo.</li>'}</ul></div>
+          <div><b>Recomendaciones</b><ul style="margin:6px 0 0;padding-left:18px;font-size:12.5px;">${recomendaciones}</ul></div>
+        </div>
+        <p class="hint" style="margin:10px 0 0;color:var(--ink-faint);font-size:11.5px;">Correlaciones relevantes de toda la flota disponibles en Condition Center → Correlación automática.</p>
+      </div>`;
+  }
+  const _ccOrigOpenReport = openReport;
+  openReport = function(c){
+    _ccOrigOpenReport(c);
+    if(!c || !ccModel) return;
+    const r = ccModel.byKey.get((c.equipo||'?')+'||'+(c.componente||'?'));
+    if(!r) return;
+    const head = $('repContent').querySelector('.rep-head');
+    if(head) head.insertAdjacentHTML('afterend', ccResumenEjecutivoHTML(r));
+  };
+
+  /* ---------- Historial mejorado: salud, anomalías y diagnóstico en la ficha rápida ---------- */
+  function ccDrawerExtraHTML(r){
+    const diagHtml = r.diagnosis.length ? r.diagnosis.map(h=>`<div class="hist-com"><b>${esc(h.mecanismo)} — ${esc(h.hallazgo)}</b>${esc(h.diagnostico)}<br><i>Recomendación: ${esc(h.recomendacion)}</i></div>`).join('') : '<p style="font-size:12px;color:var(--ink-faint);">Sin hallazgos de diagnóstico automático.</p>';
+    const anomHtml = r.anomalies.length ? r.anomalies.slice(-5).reverse().map(a=>`<div class="val-chip st-y"><span class="k">${esc(a.param)} · ${fmtDate(a.fecha)}</span><span class="v">${a.cambioPct!==null?(a.cambioPct>0?'+':'')+Math.round(a.cambioPct)+'%':a.tipo}</span></div>`).join('') : '';
+    return `
+      <div class="det-sect">Salud del activo (Health Index)</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+        <span class="cc-health-badge ${r.health.cls}" style="font-size:20px;padding:8px 16px;">${r.health.score}</span>
+        <div style="font-size:12px;color:var(--ink-soft);">${r.health.breakdown.map(b=>b.label+' ('+(b.delta>0?'+':'')+b.delta+')').join(' · ')||'Sin novedades que afecten el puntaje.'}</div>
+      </div>
+      ${anomHtml ? `<div class="det-sect">Anomalías detectadas recientes</div><div class="val-grid" style="margin-bottom:10px;">${anomHtml}</div>` : ''}
+      <div class="det-sect">Diagnóstico automático</div>
+      ${diagHtml}`;
+  }
+  const _ccOrigOpenCompDrawer = openCompDrawer;
+  openCompDrawer = function(c){
+    _ccOrigOpenCompDrawer(c);
+    if(!c || !ccModel) return;
+    const r = ccModel.byKey.get((c.equipo||'?')+'||'+(c.componente||'?'));
+    if(!r) return;
+    $('compDrawerBody').insertAdjacentHTML('afterbegin', ccDrawerExtraHTML(r));
+  };
+
+  ccRenderResumen(); // estado inicial (sin datos) antes de cargar cualquier archivo
 
   // arranque: si ya había una conexión guardada, reconectar sin pedir nada
   initCloudClient(loadCloudCfg());
